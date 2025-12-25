@@ -219,3 +219,14 @@ MIT
 ### Test 2
 package-lock.json追加後の再テスト
 # Test PR 7
+# Test PR 8 - Final Verification
+
+
+## Purpose
+
+Final verification that knowledge files are properly committed to the repository.
+
+## Changes
+
+- Updated git add to use -A flag to include new directories
+
