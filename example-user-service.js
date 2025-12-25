@@ -7,7 +7,7 @@ class UserService {
 
   // Get user by ID
   async getUserById(userId) {
-    // TODO: Add input validation
+    // TODO: Add input validation and use prepared statements
     const query = `SELECT * FROM users WHERE id = ${userId}`;
     return await this.db.query(query);
   }
