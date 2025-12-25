@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   maskSensitiveInfo,
   findSimilarKnowledge,
-  knowledgeToMarkdown
+  knowledgeToMarkdown,
+  sanitizePath
 } from '../scripts/apply-knowledge.js';
 
 describe('maskSensitiveInfo', () => {
@@ -16,16 +17,14 @@ describe('maskSensitiveInfo', () => {
   it('should mask AWS keys', () => {
     const text = 'AWS Key: AKIAIOSFODNN7EXAMPLE';
     const masked = maskSensitiveInfo(text);
-    // 汎用APIキーパターンでもマッチするため、マスクされていることを確認
-    expect(masked).toContain('***REDACTED***');
+    expect(masked).toContain('***AWS_KEY***');
     expect(masked).not.toContain('AKIAIOSFODNN7EXAMPLE');
   });
 
   it('should mask Bearer tokens', () => {
     const text = 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
     const masked = maskSensitiveInfo(text);
-    // 汎用APIキーパターンでもマッチするため、マスクされていることを確認
-    expect(masked).toContain('***REDACTED***');
+    expect(masked).toContain('Bearer ***TOKEN***');
     expect(masked).not.toContain('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9');
   });
 
@@ -141,5 +140,76 @@ describe('knowledgeToMarkdown', () => {
     expect(md).toContain('// NG');
     expect(md).toContain('bad code here');
     expect(md).not.toContain('// OK');
+  });
+});
+
+describe('sanitizePath (Security)', () => {
+  it('should accept valid path components', () => {
+    expect(sanitizePath('security')).toBe('security');
+    expect(sanitizePath('nodejs')).toBe('nodejs');
+    expect(sanitizePath('test-123')).toBe('test-123');
+    expect(sanitizePath('test_file')).toBe('test_file');
+  });
+
+  it('should reject path traversal attempts', () => {
+    expect(() => sanitizePath('../etc')).toThrow('Invalid path component');
+    expect(() => sanitizePath('../../passwd')).toThrow('Invalid path component');
+    expect(() => sanitizePath('../../../root')).toThrow('Invalid path component');
+  });
+
+  it('should reject absolute paths', () => {
+    expect(() => sanitizePath('/etc/passwd')).toThrow('Invalid path component');
+    expect(() => sanitizePath('/root/.ssh/id_rsa')).toThrow('Invalid path component');
+  });
+
+  it('should reject paths with special characters', () => {
+    expect(() => sanitizePath('file;rm -rf /')).toThrow('Invalid path component');
+    expect(() => sanitizePath('file && whoami')).toThrow('Invalid path component');
+    expect(() => sanitizePath('file | cat /etc/passwd')).toThrow('Invalid path component');
+  });
+
+  it('should reject empty or invalid inputs', () => {
+    expect(() => sanitizePath('')).toThrow('Invalid path component');
+    expect(() => sanitizePath(null)).toThrow('Invalid path component');
+    expect(() => sanitizePath(undefined)).toThrow('Invalid path component');
+  });
+
+  it('should reject paths that are too long', () => {
+    const longPath = 'a'.repeat(101);
+    expect(() => sanitizePath(longPath)).toThrow('Path component too long');
+  });
+});
+
+describe('maskSensitiveInfo (Security - Enhanced)', () => {
+  it('should mask GitHub tokens', () => {
+    const text = 'GitHub token: ghp_1234567890abcdefghijklmnopqrstuvwxyz';
+    const masked = maskSensitiveInfo(text);
+    expect(masked).toContain('***GITHUB_TOKEN***');
+    expect(masked).not.toContain('ghp_1234567890abcdefghijklmnopqrstuvwxyz');
+  });
+
+  it('should mask JWT tokens', () => {
+    const text = 'JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+    const masked = maskSensitiveInfo(text);
+    expect(masked).toContain('***JWT_TOKEN***');
+    expect(masked).not.toContain('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9');
+  });
+
+  it('should mask private keys', () => {
+    const text = 'Private key: -----BEGIN RSA PRIVATE KEY-----\nMIIBogIBAAJBALRQ\n-----END RSA PRIVATE KEY-----';
+    const masked = maskSensitiveInfo(text);
+    expect(masked).toContain('***PRIVATE_KEY***');
+    expect(masked).not.toContain('-----BEGIN RSA PRIVATE KEY-----');
+  });
+
+  it('should handle multiple sensitive patterns in one text', () => {
+    const text = 'API key: abc123def456ghi789jklmno, password: secret123, GitHub: ghp_1234567890123456789012345678901234567890';
+    const masked = maskSensitiveInfo(text);
+    expect(masked).toContain('***REDACTED***');
+    expect(masked).toContain('password: ***');
+    expect(masked).toContain('***GITHUB_TOKEN***');
+    expect(masked).not.toContain('abc123def456ghi789jklmno');
+    expect(masked).not.toContain('secret123');
+    expect(masked).not.toContain('ghp_1234567890123456789012345678901234567890');
   });
 });

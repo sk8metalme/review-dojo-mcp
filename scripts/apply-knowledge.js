@@ -9,13 +9,60 @@ import remarkStringify from 'remark-stringify';
 
 /**
  * 機密情報マスク用の正規表現パターン
+ * 注意: より具体的なパターンを先に配置（優先順位）
  */
 const SENSITIVE_PATTERNS = [
-  { name: 'API Key', pattern: /[a-zA-Z0-9_-]{20,}/g, replacement: '***REDACTED***' },
+  { name: 'Private Key', pattern: /(-----BEGIN[A-Z ]+PRIVATE KEY-----[\s\S]+?-----END[A-Z ]+PRIVATE KEY-----)/g, replacement: '***PRIVATE_KEY***' },
+  { name: 'JWT Token', pattern: /(eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,})/g, replacement: '***JWT_TOKEN***' },
+  { name: 'GitHub Token', pattern: /(gh[pousr]_[a-zA-Z0-9]{36,})/g, replacement: '***GITHUB_TOKEN***' },
   { name: 'AWS Key', pattern: /AKIA[0-9A-Z]{16}/g, replacement: '***AWS_KEY***' },
   { name: 'Bearer Token', pattern: /Bearer\s+[a-zA-Z0-9._-]+/g, replacement: 'Bearer ***TOKEN***' },
-  { name: 'Password', pattern: /password\s*[:=]\s*\S+/gi, replacement: 'password: ***' }
+  { name: 'Password', pattern: /password\s*[:=]\s*\S+/gi, replacement: 'password: ***' },
+  { name: 'API Key', pattern: /[a-zA-Z0-9_-]{20,100}/g, replacement: '***REDACTED***' }
 ];
+
+/**
+ * 入力サイズ制限
+ */
+const MAX_INPUT_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_KNOWLEDGE_ITEMS = 1000;
+
+/**
+ * アーカイブ設定
+ */
+const KNOWLEDGE_LIMIT = 100;
+const ARCHIVE_SIZE_LIMIT = 10000; // アーカイブファイルの最大項目数
+
+/**
+ * パス検証: パストラバーサル攻撃を防止
+ */
+function sanitizePath(input) {
+  if (!input || typeof input !== 'string') {
+    throw new Error('Invalid path component: must be a non-empty string');
+  }
+
+  // 元の入力をチェック: 危険な文字が含まれている場合は即座に拒否
+  if (input.includes('..') || input.includes('/') || input.includes('\\')) {
+    throw new Error(`Invalid path component: ${input}`);
+  }
+
+  // ホワイトリスト検証: 英数字、ハイフン、アンダースコア、ドットのみ許可
+  if (!/^[a-zA-Z0-9_.-]+$/.test(input)) {
+    throw new Error(`Invalid path component: ${input}`);
+  }
+
+  // 長さ制限
+  if (input.length > 100) {
+    throw new Error(`Path component too long: ${input}`);
+  }
+
+  // パスの先頭が`.`で始まる場合は拒否（隠しファイル/相対パス）
+  if (input.startsWith('.')) {
+    throw new Error(`Invalid path component: ${input}`);
+  }
+
+  return input;
+}
 
 /**
  * 機密情報をマスクする
@@ -219,23 +266,34 @@ async function updateKnowledgeFile(filePath, newItems) {
 async function archiveOldKnowledge(filePath, items) {
   // 発生回数が少ない下位の知見をアーカイブ
   items.sort((a, b) => a.occurrences - b.occurrences);
-  const toArchive = items.slice(0, items.length - 100);
+  const toArchive = items.slice(0, items.length - KNOWLEDGE_LIMIT);
 
   if (toArchive.length === 0) return;
 
-  // archive/category/language.md の形式でパスを生成
-  const category = dirname(filePath).split('/').pop();
-  const language = filePath.split('/').pop();
+  // archive/category/language.md の形式でパスを生成（パス検証）
+  const categoryRaw = dirname(filePath).split('/').pop();
+  const languageRaw = filePath.split('/').pop();
+  const category = sanitizePath(categoryRaw);
+  const language = sanitizePath(languageRaw);
   const archivePath = join(process.cwd(), 'archive', category, language);
   await mkdir(dirname(archivePath), { recursive: true });
 
   let archiveContent = '';
   if (existsSync(archivePath)) {
     archiveContent = await readFile(archivePath, 'utf-8');
+
+    // アーカイブファイルのサイズ制限チェック
+    const existingItems = await parseKnowledgeFile(archivePath);
+    if (existingItems.length + toArchive.length > ARCHIVE_SIZE_LIMIT) {
+      console.warn(`Archive file too large: ${archivePath}. Rotating...`);
+      // 古いアーカイブをローテーション
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const rotatedPath = archivePath.replace('.md', `-${timestamp}.md`);
+      await writeFile(rotatedPath, archiveContent, 'utf-8');
+      archiveContent = `# Archive: ${capitalize(category)} - ${capitalize(language.replace('.md', ''))}\n\n`;
+    }
   } else {
-    const category = dirname(filePath).split('/').pop();
-    const language = filePath.split('/').pop().replace('.md', '');
-    archiveContent = `# Archive: ${capitalize(category)} - ${capitalize(language)}\n\n`;
+    archiveContent = `# Archive: ${capitalize(category)} - ${capitalize(language.replace('.md', ''))}\n\n`;
   }
 
   toArchive.forEach(item => {
@@ -265,32 +323,77 @@ async function main() {
     }
 
     const jsonData = await readFile(inputPath, 'utf-8');
-    const data = JSON.parse(jsonData);
 
+    // 入力サイズ制限チェック
+    if (jsonData.length > MAX_INPUT_SIZE) {
+      throw new Error(`JSON file too large: ${jsonData.length} bytes (max: ${MAX_INPUT_SIZE})`);
+    }
+
+    // JSONパース（エラーハンドリング）
+    let data;
+    try {
+      data = JSON.parse(jsonData);
+    } catch (parseError) {
+      throw new Error(`Invalid JSON format: ${parseError.message}`);
+    }
+
+    // スキーマ検証
     if (!data.knowledge_items || !Array.isArray(data.knowledge_items)) {
-      console.error('Invalid JSON format: missing knowledge_items array');
-      process.exit(1);
+      throw new Error('Invalid JSON format: missing knowledge_items array');
+    }
+
+    // アイテム数制限チェック
+    if (data.knowledge_items.length > MAX_KNOWLEDGE_ITEMS) {
+      throw new Error(`Too many knowledge items: ${data.knowledge_items.length} (max: ${MAX_KNOWLEDGE_ITEMS})`);
     }
 
     console.log(`Processing ${data.knowledge_items.length} knowledge items...`);
 
-    // カテゴリ・言語ごとにグループ化
+    // カテゴリ・言語ごとにグループ化（パス検証）
     const grouped = {};
     for (const item of data.knowledge_items) {
-      const key = `${item.category}/${item.language}`;
-      if (!grouped[key]) {
-        grouped[key] = [];
+      // 必須フィールド検証
+      if (!item.category || !item.language) {
+        console.warn('Skipping item: missing category or language');
+        continue;
       }
-      grouped[key].push(item);
+
+      // パス検証
+      try {
+        const category = sanitizePath(item.category);
+        const language = sanitizePath(item.language);
+        const key = `${category}/${language}`;
+
+        if (!grouped[key]) {
+          grouped[key] = [];
+        }
+        grouped[key].push(item);
+      } catch (sanitizeError) {
+        console.warn(`Skipping item: ${sanitizeError.message}`);
+      }
     }
 
-    // 各ファイルを更新
+    // 各ファイルを更新（並列処理制限付き）
     let totalUpdated = 0;
-    for (const [key, items] of Object.entries(grouped)) {
-      const filePath = join(process.cwd(), `${key}.md`);
-      const count = await updateKnowledgeFile(filePath, items);
-      console.log(`Updated ${filePath}: ${count} items`);
-      totalUpdated += items.length;
+    const entries = Object.entries(grouped);
+    const concurrencyLimit = 10; // 同時処理数制限
+
+    for (let i = 0; i < entries.length; i += concurrencyLimit) {
+      const batch = entries.slice(i, i + concurrencyLimit);
+      const results = await Promise.all(
+        batch.map(async ([key, items]) => {
+          try {
+            const filePath = join(process.cwd(), `${key}.md`);
+            const count = await updateKnowledgeFile(filePath, items);
+            console.log(`Updated ${filePath}: ${count} items`);
+            return items.length;
+          } catch (fileError) {
+            console.error(`Error updating ${key}: ${fileError.message}`);
+            return 0;
+          }
+        })
+      );
+      totalUpdated += results.reduce((sum, count) => sum + count, 0);
     }
 
     console.log(`\nSuccessfully processed ${totalUpdated} knowledge items`);
@@ -301,6 +404,9 @@ async function main() {
 
   } catch (error) {
     console.error('Error:', error.message);
+    if (error.stack) {
+      console.error('Stack trace:', error.stack);
+    }
     process.exit(1);
   }
 }
@@ -316,5 +422,6 @@ export {
   parseKnowledgeFile,
   findSimilarKnowledge,
   knowledgeToMarkdown,
-  updateKnowledgeFile
+  updateKnowledgeFile,
+  sanitizePath
 };
