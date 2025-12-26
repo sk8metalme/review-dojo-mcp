@@ -102,7 +102,7 @@ export class FileSystemKnowledgeRepository implements IKnowledgeRepository {
 
     // 新しいアイテムを追加
     for (const item of items) {
-      archiveContent += this.itemToMarkdown(item);
+      archiveContent += this.serializer.itemToMarkdown(item);
     }
 
     await writeFile(archivePath, archiveContent, 'utf-8');
@@ -120,43 +120,6 @@ export class FileSystemKnowledgeRepository implements IKnowledgeRepository {
    */
   private getArchivePath(category: Category, language: Language): string {
     return join(this.baseDir, 'archive', category.getValue(), `${language.getValue()}.md`);
-  }
-
-  /**
-   * 個別アイテムをMarkdownに変換（アーカイブ用）
-   */
-  private itemToMarkdown(item: KnowledgeItem): string {
-    const plain = item.toPlainObject();
-
-    let md = `## ${plain.title}\n\n`;
-    md += `- **重要度**: ${plain.severity}\n`;
-    md += `- **発生回数**: ${plain.occurrences}\n`;
-    md += `- **概要**: ${plain.summary}\n`;
-    md += `- **推奨対応**: ${plain.recommendation}\n`;
-
-    if (plain.codeExample && (plain.codeExample.bad || plain.codeExample.good)) {
-      md += `- **コード例**:\n`;
-      if (plain.codeExample.bad) {
-        md += `  \`\`\`\n  // NG\n  ${plain.codeExample.bad}\n  \`\`\`\n`;
-      }
-      if (plain.codeExample.good) {
-        md += `  \`\`\`\n  // OK\n  ${plain.codeExample.good}\n  \`\`\`\n`;
-      }
-    }
-
-    if (plain.targetFile) {
-      md += `- **対象ファイル例**: \`${plain.targetFile}\`\n`;
-    }
-
-    if (plain.references && plain.references.length > 0) {
-      md += `- **参照PR**:\n`;
-      plain.references.forEach(ref => {
-        md += `  - ${ref}\n`;
-      });
-    }
-
-    md += `\n---\n`;
-    return md;
   }
 
   /**

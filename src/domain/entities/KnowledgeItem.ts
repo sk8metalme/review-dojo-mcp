@@ -68,6 +68,57 @@ export class KnowledgeItem {
   }
 
   /**
+   * ファクトリーメソッド: Markdownからのデシリアライズ用
+   * 発生回数と複数のPR参照を保持した状態で復元
+   */
+  static fromSerialized(params: {
+    title: string;
+    severity?: string;
+    summary: string;
+    recommendation: string;
+    occurrences: number;
+    code_example?: { bad?: string; good?: string };
+    file_path?: string;
+    pr_urls?: string[];
+  }): KnowledgeItem {
+    const masker = new SensitiveInfoMasker();
+
+    // 機密情報をマスク
+    const maskedSummary = masker.mask(params.summary);
+    const maskedRecommendation = masker.mask(params.recommendation);
+
+    const severity = params.severity
+      ? Severity.fromString(params.severity)
+      : Severity.info();
+
+    const codeExample = params.code_example
+      ? CodeExample.create(params.code_example.bad, params.code_example.good)
+      : CodeExample.empty();
+
+    const references: PRReference[] = [];
+    if (params.pr_urls) {
+      for (const url of params.pr_urls) {
+        try {
+          references.push(PRReference.create(url));
+        } catch (error) {
+          console.warn(`Invalid PR URL during deserialization: ${url}`, error);
+        }
+      }
+    }
+
+    return new KnowledgeItem(
+      params.title,
+      severity,
+      params.occurrences, // デシリアライズ時は元の発生回数を保持
+      maskedSummary,
+      maskedRecommendation,
+      codeExample,
+      params.file_path || '',
+      references
+    );
+  }
+
+  /**
    * 既存知見とマージ（発生回数増加、PR参照追加）
    */
   merge(params: { pr_url?: string }): void {

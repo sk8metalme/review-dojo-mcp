@@ -29,9 +29,9 @@ export class MarkdownSerializer implements IMarkdownSerializer {
   }
 
   /**
-   * 個別アイテムをMarkdownに変換
+   * 個別アイテムをMarkdownに変換（公開メソッド）
    */
-  private itemToMarkdown(item: KnowledgeItem): string {
+  itemToMarkdown(item: KnowledgeItem): string {
     const plain = item.toPlainObject();
 
     let md = `## ${plain.title}\n\n`;
@@ -120,21 +120,19 @@ export class MarkdownSerializer implements IMarkdownSerializer {
       }
     }
 
-    // KnowledgeItemを作成
-    const item = KnowledgeItem.create({
+    // 発生回数を取得（デフォルトは1）
+    const occurrences = occurrencesMatch ? parseInt(occurrencesMatch[1], 10) : 1;
+
+    // KnowledgeItemをデシリアライズ
+    const item = KnowledgeItem.fromSerialized({
       title,
       severity: severityMatch ? severityMatch[1].trim() : undefined,
       summary: summaryMatch ? summaryMatch[1].trim() : '',
       recommendation: recommendationMatch ? recommendationMatch[1].trim() : '',
+      occurrences,
       file_path: targetFileMatch ? targetFileMatch[1].trim() : undefined,
-      pr_url: references[0] // 最初のPR URLを使用
+      pr_urls: references
     });
-
-    // 参照PRが複数ある場合は追加でマージ
-    // 発生回数はcreate時に1なので、残りの参照PRをマージ
-    for (let i = 1; i < references.length; i++) {
-      item.merge({ pr_url: references[i] });
-    }
 
     return item;
   }

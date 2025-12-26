@@ -20,4 +20,10 @@ export interface IMarkdownSerializer {
    * Markdownテキストから知見アイテムをデシリアライズ
    */
   deserialize(markdown: string): KnowledgeItem[];
+
+  /**
+   * 個別アイテムをMarkdownに変換
+   * アーカイブなどで個別のアイテムをMarkdown化する際に使用
+   */
+  itemToMarkdown(item: KnowledgeItem): string;
 }
