@@ -20,3 +20,7 @@ sample-knowledge.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Build output
+dist/
+*.tsbuildinfo
