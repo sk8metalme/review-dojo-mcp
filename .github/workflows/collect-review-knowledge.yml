@@ -43,6 +43,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build TypeScript
+        run: npm run build
+
       - name: Setup Claude Code CLI
         run: |
           # Claude Code CLIのインストール
@@ -156,7 +159,7 @@ jobs:
         if: steps.repo-check.outputs.skip == 'false' && steps.comment-check.outputs.skip == 'false'
         run: |
           if [ -f knowledge.json ]; then
-            node scripts/apply-knowledge.js knowledge.json
+            node dist/index.js knowledge.json
           else
             echo "No knowledge.json generated. Skipping."
             exit 0

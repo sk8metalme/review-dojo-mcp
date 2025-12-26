@@ -1,25 +1,45 @@
 {
   "name": "review-knowledge-system",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "PR Review Knowledge Collection and Management System",
   "type": "module",
-  "main": "scripts/apply-knowledge.js",
+  "main": "dist/index.js",
+  "bin": {
+    "apply-knowledge": "./dist/index.js"
+  },
   "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "test:arch": "vitest run tests/architecture/",
+    "test:arch:watch": "vitest tests/architecture/",
+    "test:unit": "vitest run --exclude tests/architecture/",
+    "lint": "eslint src/ tests/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "github",
     "pr",
     "review",
     "knowledge",
-    "ai"
+    "ai",
+    "onion-architecture",
+    "ddd"
   ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^20.10.0",
     "@vitest/ui": "^4.0.16",
+    "tsarch": "^5.4.0",
+    "typescript": "^5.3.0",
     "vitest": "^4.0.16"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

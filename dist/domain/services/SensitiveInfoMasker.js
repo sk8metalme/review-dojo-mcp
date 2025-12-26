@@ -1,0 +1,66 @@
+/**
+ * 機密情報マスクサービス
+ * scripts/apply-knowledge.js の maskSensitiveInfo() と SENSITIVE_PATTERNS から移行
+ */
+export class SensitiveInfoMasker {
+    /**
+     * 機密情報マスク用の正規表現パターン
+     * 注意: より具体的なパターンを先に配置（優先順位）
+     */
+    static SENSITIVE_PATTERNS = [
+        {
+            name: 'Private Key',
+            pattern: /(-----BEGIN[A-Z ]+PRIVATE KEY-----[\s\S]+?-----END[A-Z ]+PRIVATE KEY-----)/g,
+            replacement: '***PRIVATE_KEY***'
+        },
+        {
+            name: 'JWT Token',
+            pattern: /(eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,})/g,
+            replacement: '***JWT_TOKEN***'
+        },
+        {
+            name: 'GitHub Token',
+            pattern: /(gh[pousr]_[a-zA-Z0-9]{36,})/g,
+            replacement: '***GITHUB_TOKEN***'
+        },
+        {
+            name: 'AWS Key',
+            pattern: /AKIA[0-9A-Z]{16}/g,
+            replacement: '***AWS_KEY***'
+        },
+        {
+            name: 'Bearer Token',
+            pattern: /Bearer\s+[a-zA-Z0-9._-]+/g,
+            replacement: 'Bearer ***TOKEN***'
+        },
+        {
+            name: 'Password',
+            pattern: /password\s*[:=]\s*\S+/gi,
+            replacement: 'password: ***'
+        },
+        {
+            name: 'API Key',
+            pattern: /[a-zA-Z0-9_-]{20,100}/g,
+            replacement: '***REDACTED***'
+        }
+    ];
+    /**
+     * テキスト内の機密情報をマスクする
+     */
+    mask(text) {
+        if (!text)
+            return text;
+        let masked = text;
+        for (const { pattern, replacement } of SensitiveInfoMasker.SENSITIVE_PATTERNS) {
+            masked = masked.replace(pattern, replacement);
+        }
+        return masked;
+    }
+    /**
+     * 複数のテキストをまとめてマスク
+     */
+    maskMultiple(...texts) {
+        return texts.map(text => this.mask(text));
+    }
+}
+//# sourceMappingURL=SensitiveInfoMasker.js.map
