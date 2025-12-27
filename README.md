@@ -225,7 +225,7 @@ cat security/java.md
 
 本システムはTypeScriptで実装され、オニオンアーキテクチャ（4層）を採用しています。
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │     Interfaces Layer (CLI)              │  ← エントリーポイント
 │  - ApplyKnowledgeCli.ts                 │
