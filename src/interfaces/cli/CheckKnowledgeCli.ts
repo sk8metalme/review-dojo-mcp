@@ -114,7 +114,6 @@ export class CheckKnowledgeCli {
         case '-h':
           this.showHelp();
           process.exit(0);
-          break;
       }
     }
 
