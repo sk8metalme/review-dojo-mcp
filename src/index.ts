@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { fileURLToPath } from 'node:url';
+import { extname } from 'node:path';
 import { ApplyKnowledgeCli } from './interfaces/cli/ApplyKnowledgeCli.js';
 import { CheckKnowledgeCli } from './interfaces/cli/CheckKnowledgeCli.js';
 
@@ -17,7 +18,7 @@ async function main() {
       // CI/CD用の知見チェック
       const checkCli = new CheckKnowledgeCli();
       await checkCli.run(args.slice(1));
-      process.exit(0);
+      break;
     }
 
     case 'apply': {
@@ -27,10 +28,18 @@ async function main() {
       break;
     }
 
-    default:
+    default: {
       // 後方互換性: コマンドなしまたは不明なコマンドの場合は apply として扱う
       // 第1引数がファイルパスの場合（.jsonで終わる）は apply として実行
-      if (command && (command.endsWith('.json') || command.startsWith('/'))) {
+      const isJsonFile = command && extname(command).toLowerCase() === '.json';
+      const isFilePath = command && (
+        command.startsWith('/') ||      // POSIX absolute path
+        command.startsWith('./') ||     // Relative path (current dir)
+        command.startsWith('../') ||    // Relative path (parent dir)
+        /^[A-Za-z]:[/\\]/.test(command) // Windows absolute path (C:\, D:\, etc.)
+      );
+
+      if (isJsonFile || isFilePath) {
         const applyCliCompat = new ApplyKnowledgeCli();
         await applyCliCompat.run(args);
       } else {
@@ -39,6 +48,7 @@ async function main() {
         process.exit(1);
       }
       break;
+    }
   }
 }
 
