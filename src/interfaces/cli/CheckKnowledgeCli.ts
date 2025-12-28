@@ -1,4 +1,7 @@
-import { GeneratePRChecklistUseCase } from '../../application/use-cases/GeneratePRChecklistUseCase.js';
+import {
+  GeneratePRChecklistUseCase,
+  type GeneratePRChecklistResponse
+} from '../../application/use-cases/GeneratePRChecklistUseCase.js';
 import { FileSystemKnowledgeRepository } from '../../infrastructure/repositories/FileSystemKnowledgeRepository.js';
 import { MarkdownSerializer } from '../../infrastructure/serializers/MarkdownSerializer.js';
 import { KnowledgeSearchService } from '../../domain/services/KnowledgeSearchService.js';
@@ -44,16 +47,16 @@ export class CheckKnowledgeCli {
       console.log(output);
 
       // 常に成功（ノンブロッキング）
-      process.exit(0);
+      // 呼び出し元が終了コードを制御
     } catch (error: any) {
       // エラーが発生しても警告のみ出力し、常に成功ステータスで終了
-      console.error('Warning: Knowledge check failed:', error.message);
+      console.error('Warning: Knowledge check failed:', error.stack || error.message);
 
       // 空の結果を出力
       const formatter = new ChecklistMarkdownFormatter();
       console.log(formatter.format({ checklist: [], summary: '' }));
 
-      process.exit(0); // 常に成功
+      // 常に成功 - 呼び出し元が終了コードを制御
     }
   }
 
@@ -73,18 +76,38 @@ export class CheckKnowledgeCli {
       switch (args[i]) {
         case '--files':
         case '-f':
+          if (i + 1 >= args.length || args[i + 1].startsWith('--')) {
+            console.error('Error: --files requires a value');
+            this.showHelp();
+            process.exit(1);
+          }
           options.files = args[++i];
           break;
         case '--format':
+          if (i + 1 >= args.length || args[i + 1].startsWith('--')) {
+            console.error('Error: --format requires a value');
+            this.showHelp();
+            process.exit(1);
+          }
           options.format = args[++i];
           break;
         case '--severity':
+          if (i + 1 >= args.length || args[i + 1].startsWith('--')) {
+            console.error('Error: --severity requires a value');
+            this.showHelp();
+            process.exit(1);
+          }
           options.severity = args[++i];
           break;
         case '--include-empty':
           options.includeEmpty = true;
           break;
         case '--knowledge-dir':
+          if (i + 1 >= args.length || args[i + 1].startsWith('--')) {
+            console.error('Error: --knowledge-dir requires a value');
+            this.showHelp();
+            process.exit(1);
+          }
           options.knowledgeDir = args[++i];
           break;
         case '--help':
@@ -126,7 +149,7 @@ export class CheckKnowledgeCli {
    * 結果をフォーマットして出力
    */
   private formatOutput(
-    result: any,
+    result: GeneratePRChecklistResponse,
     options: CheckKnowledgeOptions
   ): string {
     if (options.outputFormat === 'json') {

@@ -34,68 +34,59 @@ describe('CheckKnowledgeCli', () => {
     });
 
     it('should parse --files argument', async () => {
-      // This test verifies parsing, but will fail during execution due to missing knowledge files
-      // We're just checking that it doesn't fail on argument parsing
+      // This test verifies parsing
+      // Run should complete normally without throwing
       const args = ['--files', 'test.java'];
 
-      try {
-        await cli.run(args);
-      } catch (error: any) {
-        // Expected to fail during execution, not during parsing
-        // If it exits with 0, it means it handled gracefully
-        expect(error.message).toContain('process.exit(0)');
-      }
+      await cli.run(args);
+
+      // Should have output something (either checklist or empty result)
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should parse comma-separated file paths', async () => {
       const args = ['--files', 'file1.java,file2.ts,file3.py'];
 
-      try {
-        await cli.run(args);
-      } catch (error: any) {
-        // Should handle gracefully
-        expect(error.message).toContain('process.exit(0)');
-      }
+      // Should complete normally without throwing
+      await cli.run(args);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should handle --format argument', async () => {
       const args = ['--files', 'test.java', '--format', 'json'];
 
-      try {
-        await cli.run(args);
-      } catch (error: any) {
-        expect(error.message).toContain('process.exit(0)');
-      }
+      // Should complete normally without throwing
+      await cli.run(args);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should handle --severity argument', async () => {
       const args = ['--files', 'test.java', '--severity', 'critical,warning'];
 
-      try {
-        await cli.run(args);
-      } catch (error: any) {
-        expect(error.message).toContain('process.exit(0)');
-      }
+      // Should complete normally without throwing
+      await cli.run(args);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should handle --include-empty flag', async () => {
       const args = ['--files', 'test.java', '--include-empty'];
 
-      try {
-        await cli.run(args);
-      } catch (error: any) {
-        expect(error.message).toContain('process.exit(0)');
-      }
+      // Should complete normally without throwing
+      await cli.run(args);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should handle --knowledge-dir argument', async () => {
       const args = ['--files', 'test.java', '--knowledge-dir', '/tmp/knowledge'];
 
-      try {
-        await cli.run(args);
-      } catch (error: any) {
-        expect(error.message).toContain('process.exit(0)');
-      }
+      // Should complete normally without throwing
+      await cli.run(args);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should show help with --help flag', async () => {
@@ -114,38 +105,31 @@ describe('CheckKnowledgeCli', () => {
     it('should filter empty file paths', async () => {
       const args = ['--files', 'file1.java,,file2.ts, ,file3.py'];
 
-      try {
-        await cli.run(args);
-      } catch (error: any) {
-        // Should handle gracefully (3 valid files)
-        expect(error.message).toContain('process.exit(0)');
-      }
+      // Should complete normally without throwing (3 valid files)
+      await cli.run(args);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
   });
 
   describe('error handling', () => {
-    it('should exit with 0 on error (non-blocking)', async () => {
-      const args = ['--files', 'nonexistent.java'];
+    it('should handle missing files gracefully (non-blocking)', async () => {
+      const args = ['--files', 'nonexistent.java', '--knowledge-dir', '/nonexistent'];
 
-      try {
-        await cli.run(args);
-      } catch (error: any) {
-        // Should always exit with 0 (non-blocking)
-        expect(error.message).toContain('process.exit(0)');
-      }
+      // Should not throw - just return normally
+      await cli.run(args);
 
-      // Should log warning
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      // Should output empty checklist (handles gracefully, no error logged)
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0];
+      expect(output).toContain('<!-- review-dojo-checklist -->');
     });
 
     it('should output empty checklist on error', async () => {
       const args = ['--files', 'test.java', '--knowledge-dir', '/nonexistent'];
 
-      try {
-        await cli.run(args);
-      } catch (error: any) {
-        expect(error.message).toContain('process.exit(0)');
-      }
+      // Should not throw - just return normally
+      await cli.run(args);
 
       // Should output markdown with "No relevant knowledge"
       expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -158,11 +142,8 @@ describe('CheckKnowledgeCli', () => {
     it('should default to markdown format', async () => {
       const args = ['--files', 'test.java'];
 
-      try {
-        await cli.run(args);
-      } catch (error: any) {
-        expect(error.message).toContain('process.exit(0)');
-      }
+      // Should complete normally without throwing
+      await cli.run(args);
 
       // Default should be markdown
       const output = consoleLogSpy.mock.calls[0]?.[0];
@@ -191,11 +172,10 @@ describe('CheckKnowledgeCli', () => {
     it('should handle short flag -f', async () => {
       const args = ['-f', 'test.java'];
 
-      try {
-        await cli.run(args);
-      } catch (error: any) {
-        expect(error.message).toContain('process.exit(0)');
-      }
+      // Should complete normally without throwing
+      await cli.run(args);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should handle short flag -h', async () => {

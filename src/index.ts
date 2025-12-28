@@ -13,17 +13,19 @@ async function main() {
 
   // サブコマンドルーティング
   switch (command) {
-    case 'check':
+    case 'check': {
       // CI/CD用の知見チェック
       const checkCli = new CheckKnowledgeCli();
       await checkCli.run(args.slice(1));
-      break;
+      process.exit(0);
+    }
 
-    case 'apply':
+    case 'apply': {
       // 知見の適用（既存機能）
       const applyCli = new ApplyKnowledgeCli();
       await applyCli.run(args.slice(1));
       break;
+    }
 
     default:
       // 後方互換性: コマンドなしまたは不明なコマンドの場合は apply として扱う
