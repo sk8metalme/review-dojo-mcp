@@ -1,5 +1,9 @@
 name: Check Review Knowledge
 
+# Note: Actions use version tags (@v4) instead of SHA hashes for maintainability.
+# This is standard practice for open-source projects. Consider using Dependabot
+# to keep action versions updated.
+
 on:
   # For use in source repositories via workflow_call
   workflow_call:
@@ -30,6 +34,7 @@ jobs:
       - name: Checkout source repository
         uses: actions/checkout@v4
         with:
+          # fetch-depth: 0 required for tj-actions/changed-files to detect all changes in PRs
           fetch-depth: 0
 
       - name: Get changed files
