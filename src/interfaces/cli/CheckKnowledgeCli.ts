@@ -11,10 +11,15 @@ import { ChecklistMarkdownFormatter } from './ChecklistMarkdownFormatter.js';
  * CLI オプション
  */
 export interface CheckKnowledgeOptions {
+  /** チェック対象のファイルパス一覧 */
   filePaths: string[];
+  /** 出力フォーマット (markdown または json) */
   outputFormat: 'markdown' | 'json';
+  /** 重要度フィルタ (カンマ区切り: critical,warning,info) */
   severityFilter?: string;
+  /** 空の結果も含めるかどうか */
   includeEmpty: boolean;
+  /** 知識ベースのディレクトリパス */
   knowledgeDir: string;
 }
 
