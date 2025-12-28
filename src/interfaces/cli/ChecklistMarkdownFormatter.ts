@@ -105,6 +105,10 @@ export class ChecklistMarkdownFormatter {
 
   /**
    * 重要度でグループ化
+   *
+   * Note: Severity値は domain/value-objects/Severity.ts で
+   * 'critical' | 'warning' | 'info' のいずれかに制限されているため、
+   * これら3つ以外の値は存在しません。
    */
   private groupBySeverity(items: ChecklistItemDTO[]): {
     critical: ChecklistItemDTO[];
