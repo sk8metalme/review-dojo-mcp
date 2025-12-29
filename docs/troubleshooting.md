@@ -4,7 +4,7 @@
 
 ## 診断フローチャート
 
-```
+```text
 問題発生
 ├── 知見が収集されない → [収集系トラブル](#収集系トラブル)
 ├── PRコメントが投稿されない → [CI/CD系トラブル](#cicd系トラブル)
@@ -28,7 +28,7 @@ gh run list --workflow=trigger-knowledge-collection.yml --limit 5
 ```
 
 **期待される出力**:
-```
+```text
 ✓ Trigger Knowledge Collection    main  PR #123  success
 ```
 
@@ -51,7 +51,7 @@ gh run view <run-id> --log
 ```
 
 **期待される出力**:
-```
+```text
 Run peter-evans/repository-dispatch@v2
 ✓ Dispatched knowledge collection for PR #123
 ```
@@ -76,7 +76,7 @@ gh run list --workflow=collect-review-knowledge.yml --limit 5
 ```
 
 **期待される出力**:
-```
+```text
 ✓ Collect Review Knowledge    main  repository_dispatch  success
 ```
 
@@ -135,7 +135,7 @@ gh run view <run-id> --log | grep -i "claude\|anthropic"
 ### 症状: 「Private repository detected」で収集がスキップされる
 
 **ログ例**:
-```
+```text
 Private repository detected, skipping knowledge collection
 ```
 
@@ -158,7 +158,7 @@ Private repository detected, skipping knowledge collection
 ### 症状: 「No resolved threads」でスキップされる
 
 **ログ例**:
-```
+```text
 No resolved review threads found. Skipping knowledge extraction.
 ```
 
@@ -172,7 +172,7 @@ No resolved review threads found. Skipping knowledge extraction.
 3. PRをマージ
 
 **正しいワークフロー**:
-```
+```text
 1. PR作成
 2. レビュアーがコメント追加
 3. 修正対応
@@ -222,7 +222,7 @@ gh run list --workflow=check-knowledge.yml --limit 5
 ```
 
 **期待される出力**:
-```
+```text
 ✓ Check Review Knowledge    PR #123  pull_request  success
 ```
 
@@ -247,7 +247,7 @@ on:
 - ✅ Allow GitHub Actions to create and approve pull requests
 
 **権限が不足している場合**:
-```
+```text
 Error: Resource not accessible by integration
 ```
 
@@ -278,7 +278,7 @@ jobs:
 ### 症状: 「knowledge-repo not found」エラー
 
 **エラー例**:
-```
+```text
 Error: Repository not found: YOUR_ORG/YOUR_KNOWLEDGE_REPO
 ```
 
@@ -340,7 +340,7 @@ claude mcp list
 ```
 
 **期待される出力**:
-```
+```text
 Name: review-dojo
 Transport: stdio
 Command: node
@@ -410,7 +410,7 @@ MCPサーバーの設定変更後は必ず再起動が必要です。
 ### 症状: 「search_knowledge returned empty」
 
 **コメント例**:
-```
+```text
 review-dojoで検索しましたが、該当する知見が見つかりませんでした。
 ```
 
@@ -427,13 +427,13 @@ find . -name "*.md" -path "*/security/*" -o -path "*/performance/*"
 ```
 
 **2. サンプルデータで動作確認**:
-```
+```text
 # Claude Codeで質問
 security/java.md ファイルに何か知見がありますか？
 ```
 
 **3. より広い条件で検索**:
-```
+```text
 # 条件を緩める
 「Java」に関する知見を全て見せて
 ```
@@ -441,7 +441,7 @@ security/java.md ファイルに何か知見がありますか？
 ### 症状: MCPサーバーが起動しない
 
 **エラー例**:
-```
+```text
 Error: Cannot find module 'zod'
 Error: Cannot find module '@modelcontextprotocol/sdk'
 ```
@@ -491,7 +491,7 @@ nodenv global 20.10.0
 ### 症状: TypeScript ビルドエラー
 
 **エラー例**:
-```
+```text
 error TS2307: Cannot find module 'zod' or its corresponding type declarations.
 ```
 
@@ -507,7 +507,7 @@ npm run build
 ### 症状: テストが失敗する
 
 **エラー例**:
-```
+```text
 FAIL src/domain/entities/KnowledgeItem.test.ts
  ● KnowledgeItem › should create valid knowledge item
 
@@ -579,7 +579,7 @@ git push origin fix/markdown-formatting
 ### 症状: Git コンフリクトが発生する
 
 **エラー例**:
-```
+```text
 CONFLICT (content): Merge conflict in security/java.md
 ```
 
@@ -650,7 +650,7 @@ node dist/interfaces/mcp/McpServer.js 2>&1 | head -100
 ### 問題が解決しない場合
 
 1. **GitHub Issues で検索**
-   - https://github.com/sk8metalme/review-dojo/issues
+   - [GitHub Issues](https://github.com/sk8metalme/review-dojo/issues)
    - 同じ問題が報告されていないか確認
 
 2. **新規Issue作成**
@@ -663,7 +663,7 @@ node dist/interfaces/mcp/McpServer.js 2>&1 | head -100
      - 期待される動作
 
 3. **ディスカッション**
-   - https://github.com/sk8metalme/review-dojo/discussions
+   - [ディスカッション](https://github.com/sk8metalme/review-dojo/discussions)
    - 質問・議論はこちら
 
 ### デバッグ情報の収集

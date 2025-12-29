@@ -33,13 +33,13 @@
 
 review-dojoリポジトリをフォークまたはクローンして、自組織の知見リポジトリとして使用します。
 
-**方法A: GitHub UIでフォーク（推奨）**
-1. https://github.com/sk8metalme/review-dojo にアクセス
+##### 方法A: GitHub UIでフォーク（推奨）
+1. [review-dojoリポジトリ](https://github.com/sk8metalme/review-dojo) にアクセス
 2. 「Fork」ボタンをクリック
 3. Organization を選択
 4. リポジトリ名を決定（例: `review-dojo`, `review-knowledge`, `pr-knowledge`）
 
-**方法B: クローンして新規リポジトリ作成**
+##### 方法B: クローンして新規リポジトリ作成
 ```bash
 # クローン
 git clone https://github.com/sk8metalme/review-dojo.git
@@ -129,21 +129,21 @@ npm test  # すべてのテストがパスすることを確認
 3. 各Secretを追加:
 
 **ANTHROPIC_API_KEY**:
-```
+```text
 Name: ANTHROPIC_API_KEY
 Secret: sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Repository access: All repositories (または Selected repositories)
 ```
 
 **ORG_GITHUB_TOKEN**:
-```
+```text
 Name: ORG_GITHUB_TOKEN
 Secret: （作成したPATを貼り付け）
 Repository access: All repositories
 ```
 
 **KNOWLEDGE_REPO_TOKEN**:
-```
+```text
 Name: KNOWLEDGE_REPO_TOKEN
 Secret: （作成したPATを貼り付け）
 Repository access: All repositories
@@ -292,7 +292,7 @@ gh run view <run-id> --log
 ```
 
 ログに以下が表示されていればOK:
-```
+```text
 Dispatched knowledge collection for PR #X
 ```
 
@@ -304,7 +304,7 @@ gh run view <run-id> --log
 ```
 
 成功時のログ例:
-```
+```text
 ✓ Checkout knowledge repository
 ✓ Extract knowledge with Claude Code
 ✓ Apply knowledge to markdown files
@@ -402,7 +402,7 @@ claude mcp get review-dojo
 ```
 
 出力例:
-```
+```text
 Name: review-dojo
 Transport: stdio
 Command: node
@@ -420,7 +420,7 @@ Scope: user
 
 Claude Code で以下のように質問:
 
-```
+```text
 Javaのセキュリティに関する知見を検索して
 ```
 
@@ -438,7 +438,7 @@ Claude Codeが自動的にMCPサーバーの `search_knowledge` ツールを呼�
 
 #### 2.3.3 検索クエリの例
 
-```
+```text
 # カテゴリで絞り込み
 セキュリティカテゴリのJavaに関する知見を全て見せて
 
@@ -709,7 +709,7 @@ review-dojoは以下のパターンを自動的にマスク:
 - パスワード（`password=...`）
 
 ログで以下のように表示されます:
-```
+```text
 [MASKED: API_KEY]
 ```
 

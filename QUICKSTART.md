@@ -93,13 +93,13 @@ claude mcp add review-dojo node $(pwd)/dist/interfaces/mcp/McpServer.js
 
 Claude Code で以下のように質問してみてください：
 
-```
+```text
 Javaのセキュリティに関する知見を検索して
 ```
 
 または：
 
-```
+```text
 SQLインジェクション対策について教えて
 ```
 
