@@ -63,7 +63,13 @@ npm test
 
 MCPサーバーを使うと、Claude Code / VSCode から知見を検索できます。
 
+**知見の参照方法は2つ**：
+- **ローカルモード**: このリポジトリの知見を参照（デフォルト）
+- **リモートモード**: 任意のGitHubリポジトリの知見を参照（新機能）
+
 ### 2.1 MCPサーバーの設定
+
+#### 方法A: ローカルモード（このリポジトリの知見を使用）
 
 Claude Code を使用している場合：
 
@@ -84,6 +90,38 @@ claude mcp add review-dojo node $(pwd)/dist/interfaces/mcp/McpServer.js
   }
 }
 ```
+
+#### 方法B: リモートモード（別のGitHubリポジトリの知見を参照）
+
+チームの知見リポジトリがある場合は、リモートモードで直接参照できます：
+
+```bash
+# 環境変数で知見リポジトリを指定
+claude mcp add review-dojo --scope user \
+  --env REVIEW_DOJO_GITHUB_REPO="your-org/your-knowledge-repo" \
+  -- node $(pwd)/dist/interfaces/mcp/McpServer.js
+```
+
+または `~/.claude.json`：
+
+```json
+{
+  "mcpServers": {
+    "review-dojo": {
+      "command": "node",
+      "args": ["/path/to/review-dojo/dist/interfaces/mcp/McpServer.js"],
+      "env": {
+        "REVIEW_DOJO_GITHUB_REPO": "your-org/your-knowledge-repo"
+      }
+    }
+  }
+}
+```
+
+**リモートモードのメリット**:
+- 知見リポジトリのクローン不要
+- 常に最新の知見を参照
+- プライベートリポジトリの場合は `GITHUB_TOKEN` 環境変数を追加
 
 ### 2.2 Claude Code / VSCode を再起動
 

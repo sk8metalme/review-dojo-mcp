@@ -8,7 +8,8 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname, join, resolve } from 'path';
+import { existsSync } from 'fs';
 
 // Use Cases
 import { SearchKnowledgeUseCase } from '../../application/use-cases/SearchKnowledgeUseCase.js';
@@ -18,10 +19,65 @@ import { ListKnowledgeMetadataUseCase } from '../../application/use-cases/ListKn
 
 // Infrastructure
 import { FileSystemKnowledgeRepository } from '../../infrastructure/repositories/FileSystemKnowledgeRepository.js';
+import { GitHubKnowledgeRepository } from '../../infrastructure/repositories/GitHubKnowledgeRepository.js';
 import { MarkdownSerializer } from '../../infrastructure/serializers/MarkdownSerializer.js';
+import { IKnowledgeRepository } from '../../application/ports/IKnowledgeRepository.js';
 
 // Domain Services
 import { KnowledgeSearchService } from '../../domain/services/KnowledgeSearchService.js';
+
+// Version Check
+import { checkForUpdates } from './versionCheck.js';
+
+/**
+ * 知見アクセスモード
+ */
+type KnowledgeMode =
+  | { type: 'local'; path: string }
+  | { type: 'github'; repo: string; token?: string }
+  | { type: 'default'; path: string };
+
+/**
+ * 知見アクセスモードを環境変数から解決
+ */
+function resolveKnowledgeMode(): KnowledgeMode {
+  const localDir = process.env.REVIEW_DOJO_KNOWLEDGE_DIR;
+  const githubRepo = process.env.REVIEW_DOJO_GITHUB_REPO;
+  const githubToken = process.env.GITHUB_TOKEN;
+
+  if (githubRepo) {
+    console.error(`[review-dojo] Using GitHub repository: ${githubRepo}`);
+    return { type: 'github', repo: githubRepo, token: githubToken };
+  }
+
+  if (localDir) {
+    const resolvedPath = resolve(localDir);
+    if (!existsSync(resolvedPath)) {
+      console.error(`[review-dojo] Error: Directory not found: ${resolvedPath}`);
+      console.error(`[review-dojo] Please check REVIEW_DOJO_KNOWLEDGE_DIR environment variable`);
+      process.exit(1);
+    }
+    console.error(`[review-dojo] Using local directory: ${resolvedPath}`);
+    return { type: 'local', path: resolvedPath };
+  }
+
+  // フォールバック: 従来の相対パス
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const path = join(__dirname, '../../..');
+  console.error(`[review-dojo] Using default path: ${path}`);
+  return { type: 'default', path };
+}
+
+/**
+ * モードに応じたKnowledgeRepositoryを生成
+ */
+function createKnowledgeRepository(mode: KnowledgeMode, serializer: MarkdownSerializer): IKnowledgeRepository {
+  if (mode.type === 'github') {
+    return new GitHubKnowledgeRepository(mode.repo, serializer, mode.token);
+  }
+  return new FileSystemKnowledgeRepository(mode.path, serializer);
+}
 
 /**
  * review-dojo MCP Server
@@ -46,12 +102,9 @@ class ReviewDojoMcpServer {
     });
 
     // インフラストラクチャの初期化
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
-    const baseDir = join(__dirname, '../../..');
-
+    const mode = resolveKnowledgeMode();
     const serializer = new MarkdownSerializer();
-    const repository = new FileSystemKnowledgeRepository(baseDir, serializer);
+    const repository = createKnowledgeRepository(mode, serializer);
     const searchService = new KnowledgeSearchService();
 
     // Use Casesの初期化
@@ -337,9 +390,20 @@ class ReviewDojoMcpServer {
    * サーバー起動
    */
   async start() {
+    // バージョンチェック
+    const versionInfo = await checkForUpdates();
+    if (versionInfo) {
+      console.error(`[review-dojo] Starting MCP server v${versionInfo.currentVersion}`);
+      if (versionInfo.updateAvailable) {
+        console.error(`[review-dojo] ⚠️  New version available: v${versionInfo.latestVersion}`);
+        console.error(`[review-dojo] Current: v${versionInfo.currentVersion}`);
+        console.error(`[review-dojo] Update: ${versionInfo.updateCommand}`);
+      }
+    }
+
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error('review-dojo MCP Server started');
+    console.error('[review-dojo] MCP Server started');
   }
 }
 

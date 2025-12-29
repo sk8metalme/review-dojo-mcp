@@ -344,7 +344,33 @@ review-dojoはModel Context Protocol (MCP)サーバーを提供し、Claude Code
    - 個人の設定として永続化
    - 一度設定すればどのディレクトリからでも利用可能
 
-3. **MCP管理コマンド**
+3. **知見アクセスモード（新機能）**
+
+   review-dojoはハイブリッドアクセスをサポートしています：
+
+   | モード | 環境変数 | 用途 |
+   |--------|---------|------|
+   | リモート | `REVIEW_DOJO_GITHUB_REPO` | GitHub経由で知見取得（常に最新） |
+   | ローカル | `REVIEW_DOJO_KNOWLEDGE_DIR` | ローカル知見ディレクトリ参照 |
+
+   **リモートモード例**:
+   ```json
+   {
+     "mcpServers": {
+       "review-dojo": {
+         "command": "node",
+         "args": ["/path/to/review-dojo/dist/interfaces/mcp/McpServer.js"],
+         "env": {
+           "REVIEW_DOJO_GITHUB_REPO": "your-org/knowledge-repo"
+         }
+       }
+     }
+   }
+   ```
+
+   詳細は [QUICKSTART.md](QUICKSTART.md) および [統合ガイド](docs/integration-guide.md) を参照してください。
+
+4. **MCP管理コマンド**
 
    ```bash
    # サーバー一覧
