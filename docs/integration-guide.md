@@ -414,9 +414,71 @@ Scope: user
 
 設定を反映するため、Claude Code / VSCode を再起動してください。
 
-### 2.3 MCPサーバーの使用
+### 2.3 知見アクセスモードの設定
 
-#### 2.3.1 基本的な使用方法
+#### 2.3.1 アクセスモードの種類
+
+review-dojoは複数の知見アクセスモードをサポートしています：
+
+| モード | 環境変数 | 用途 |
+|--------|---------|------|
+| **リモートモード** | `REVIEW_DOJO_GITHUB_REPO` | GitHub経由で知見を取得 |
+| **ローカルモード** | `REVIEW_DOJO_KNOWLEDGE_DIR` | ローカルの知見ディレクトリを参照 |
+| **デフォルトモード** | 設定なし | review-dojoリポジトリ自体の知見を参照 |
+
+#### 2.3.2 環境変数一覧
+
+| 環境変数 | 説明 | 例 |
+|---------|------|-----|
+| `REVIEW_DOJO_GITHUB_REPO` | GitHub知見リポジトリ | `acme/review-knowledge` |
+| `REVIEW_DOJO_KNOWLEDGE_DIR` | ローカル知見ディレクトリ | `/home/user/knowledge` |
+| `GITHUB_TOKEN` | プライベートリポジトリ用トークン | `ghp_xxxx` |
+
+**優先順位**: `REVIEW_DOJO_GITHUB_REPO` → `REVIEW_DOJO_KNOWLEDGE_DIR` → デフォルト
+
+#### 2.3.3 リモートモード設定（推奨）
+
+```json
+{
+  "mcpServers": {
+    "review-dojo": {
+      "command": "node",
+      "args": ["/path/to/review-dojo/dist/interfaces/mcp/McpServer.js"],
+      "env": {
+        "REVIEW_DOJO_GITHUB_REPO": "your-org/knowledge-repo"
+      }
+    }
+  }
+}
+```
+
+**メリット**: 知見リポジトリのクローン不要、常に最新
+
+**デメリット**: ネットワーク必須、API制限（5000回/時間）
+
+#### 2.3.4 ローカルモード設定
+
+```json
+{
+  "mcpServers": {
+    "review-dojo": {
+      "command": "node",
+      "args": ["/path/to/review-dojo/dist/interfaces/mcp/McpServer.js"],
+      "env": {
+        "REVIEW_DOJO_KNOWLEDGE_DIR": "/Users/you/knowledge-repo"
+      }
+    }
+  }
+}
+```
+
+**メリット**: オフライン動作、API制限なし、高速
+
+**デメリット**: 知見更新に `git pull` が必要
+
+### 2.4 MCPサーバーの使用
+
+#### 2.4.1 基本的な使用方法
 
 Claude Code で以下のように質問:
 
@@ -426,7 +488,7 @@ Javaのセキュリティに関する知見を検索して
 
 Claude Codeが自動的にMCPサーバーの `search_knowledge` ツールを呼び出し、関連知見を提示します。
 
-#### 2.3.2 利用可能なツール
+#### 2.4.2 利用可能なツール
 
 | ツール | 用途 | 例 |
 |--------|------|-----|
