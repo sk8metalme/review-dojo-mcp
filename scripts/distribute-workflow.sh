@@ -77,14 +77,26 @@ parse_args() {
                 shift
                 ;;
             --repos)
+                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                    error "--repos requires an argument"
+                    exit 1
+                fi
                 SPECIFIC_REPOS="$2"
                 shift 2
                 ;;
             --exclude)
+                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                    error "--exclude requires an argument"
+                    exit 1
+                fi
                 EXCLUDE_REPOS="$2"
                 shift 2
                 ;;
             --branch)
+                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                    error "--branch requires an argument"
+                    exit 1
+                fi
                 BRANCH_NAME="$2"
                 shift 2
                 ;;
@@ -138,7 +150,7 @@ get_repositories() {
     local org="$1"
     info "Fetching repositories from $org..."
 
-    gh repo list "$org" --json name,isArchived --limit 100 --jq '.[] | select(.isArchived == false) | .name'
+    gh repo list "$org" --json name,isArchived --limit 1000 --jq '.[] | select(.isArchived == false) | .name'
 }
 
 # リポジトリをフィルタリング
