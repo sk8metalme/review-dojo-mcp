@@ -27,7 +27,140 @@
 
 ## Phase 1: 知見収集システムの導入
 
-### 1.1 knowledge-repo のフォーク・セットアップ
+### 導入方法の選択
+
+review-dojoの知見収集システムには2つの導入方法があります：
+
+| 方法 | 概要 | メリット | デメリット |
+|------|------|---------|-----------|
+| **GitHub Action** (推奨) | review-dojo-actionを使用 | ・知見データのみ管理<br>・ビルド不要<br>・高速実行 | ・v1.0.0以降が必要 |
+| **フォーク方式** | review-dojoを丸ごとフォーク | ・全機能利用可能<br>・カスタマイズ可能 | ・ビルドが必要<br>・ソースコード含む |
+
+**推奨**: 新規導入の場合は **GitHub Action方式** をご利用ください。
+
+#### GitHub Action方式のセットアップ
+
+**1. 知見リポジトリを作成**
+
+空のリポジトリを作成し、カテゴリディレクトリのみ初期化します：
+
+```bash
+# 新規リポジトリを作成（GitHub UI または gh CLI）
+gh repo create YOUR_ORG/YOUR_KNOWLEDGE_REPO --public
+
+# クローンとディレクトリ作成
+git clone https://github.com/YOUR_ORG/YOUR_KNOWLEDGE_REPO.git
+cd YOUR_KNOWLEDGE_REPO
+
+# カテゴリディレクトリを作成
+mkdir -p security performance readability design testing error-handling other archive
+
+# 初期化
+git add .
+git commit -m "chore: Initialize knowledge repository structure"
+git push origin main
+```
+
+**2. 知見収集ワークフローを配置**
+
+`.github/workflows/collect-review-knowledge.yml` を作成：
+
+```yaml
+name: Collect Review Knowledge
+
+on:
+  repository_dispatch:
+    types: [pr-merged]
+  workflow_dispatch:
+    inputs:
+      pr_url:
+        description: 'PR URL to analyze'
+        required: true
+      repo_owner:
+        description: 'Repository owner'
+        required: true
+      repo_name:
+        description: 'Repository name'
+        required: true
+      pr_number:
+        description: 'PR number'
+        required: true
+
+concurrency:
+  group: knowledge-collection
+  cancel-in-progress: false
+
+jobs:
+  collect-knowledge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout knowledge repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.KNOWLEDGE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Extract PR information
+        id: pr-info
+        run: |
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            echo "PR_URL=${{ github.event.client_payload.pr_url }}" >> $GITHUB_OUTPUT
+            echo "REPO_OWNER=${{ github.event.client_payload.repo_owner }}" >> $GITHUB_OUTPUT
+            echo "REPO_NAME=${{ github.event.client_payload.repo_name }}" >> $GITHUB_OUTPUT
+            echo "PR_NUMBER=${{ github.event.client_payload.pr_number }}" >> $GITHUB_OUTPUT
+          else
+            echo "PR_URL=${{ github.event.inputs.pr_url }}" >> $GITHUB_OUTPUT
+            echo "REPO_OWNER=${{ github.event.inputs.repo_owner }}" >> $GITHUB_OUTPUT
+            echo "REPO_NAME=${{ github.event.inputs.repo_name }}" >> $GITHUB_OUTPUT
+            echo "PR_NUMBER=${{ github.event.inputs.pr_number }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Collect knowledge
+        uses: sk8metalme/review-dojo-action@v1
+        id: collect
+        with:
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github-token: ${{ secrets.ORG_GITHUB_TOKEN }}
+          pr-url: ${{ steps.pr-info.outputs.PR_URL }}
+          repo-owner: ${{ steps.pr-info.outputs.REPO_OWNER }}
+          repo-name: ${{ steps.pr-info.outputs.REPO_NAME }}
+          pr-number: ${{ steps.pr-info.outputs.PR_NUMBER }}
+
+      - name: Commit and push changes
+        if: steps.collect.outputs.knowledge-collected == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Add knowledge from ${{ steps.pr-info.outputs.PR_URL }}"
+          git push
+```
+
+**3. GitHub Secretsの設定**
+
+[1.2 GitHub Secrets の設定](#12-github-secrets-の設定) に進んでください。
+
+**4. 各リポジトリへのトリガー配置**
+
+[1.3 各リポジトリへのワークフロー配置](#13-各リポジトリへのワークフロー配置) に進んでください。
+
+**メリット**:
+- 知見データ（markdownファイル）のみを管理
+- `npm install`, `npm run build` が不要
+- ワークフロー実行時間が短縮（約30秒削減）
+- ソースコード管理不要
+
+**次のセクションへ**: GitHub Action方式を選択した場合、[1.2 GitHub Secrets の設定](#12-github-secrets-の設定) に進んでください。
+
+---
+
+### 1.1 knowledge-repo のフォーク・セットアップ（フォーク方式）
+
+> **注意**: この方式は既存ユーザー向けです。新規導入の場合は上記の「GitHub Action方式」を推奨します。
 
 #### 1.1.1 リポジトリのフォークまたはクローン
 
