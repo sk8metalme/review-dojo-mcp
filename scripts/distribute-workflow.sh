@@ -91,6 +91,11 @@ parse_args() {
                     exit 1
                 fi
                 DELAY_SECONDS="$2"
+                # 数値検証: 整数または小数、非負のみ許可
+                if ! [[ "$DELAY_SECONDS" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+                    error "--delay must be a non-negative number (got: '$DELAY_SECONDS')"
+                    exit 1
+                fi
                 shift 2
                 ;;
             --no-delay)
@@ -290,7 +295,16 @@ distribute_workflow() {
     if gh api "repos/$org/$repo/git/refs/heads/$BRANCH_NAME" &> /dev/null; then
         if [[ "$FORCE_DELETE" == true ]]; then
             warn "$org/$repo: Branch $BRANCH_NAME already exists. Deleting with --force-delete..."
-            gh api "repos/$org/$repo/git/refs/heads/$BRANCH_NAME" -X DELETE || true
+            local delete_output
+            delete_output=$(gh api "repos/$org/$repo/git/refs/heads/$BRANCH_NAME" -X DELETE 2>&1)
+            local delete_status=$?
+            if [[ $delete_status -ne 0 ]]; then
+                error "$org/$repo: Failed to delete branch $BRANCH_NAME (exit code: $delete_status)"
+                error "gh output: $delete_output"
+                SKIP_REPOS+=("$repo (delete failed)")
+                ((SKIP_COUNT++))
+                return 0
+            fi
         else
             warn "$org/$repo: Branch $BRANCH_NAME already exists. Skipping (use --force-delete to override)"
             SKIP_REPOS+=("$repo (branch exists)")
