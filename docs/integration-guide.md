@@ -38,7 +38,7 @@ review-dojoの知見収集システムには2つの導入方法があります�
 
 **推奨**: 新規導入の場合は **GitHub Action方式** をご利用ください。
 
-> **Note**: review-dojoのapply機能はv2.3.0で[review-dojo-action](https://github.com/sk8metalme/review-dojo-action)に移管されました。フォーク方式はMCP ServerとCI/CDチェック機能のみを提供します。
+> **Note**: review-dojoのapply機能は[review-dojo-action](https://github.com/sk8metalme/review-dojo-action)に移管されました。フォーク方式はMCP ServerとCI/CDチェック機能のみを提供します。
 
 #### GitHub Action方式のセットアップ
 
@@ -56,6 +56,10 @@ cd YOUR_KNOWLEDGE_REPO
 
 # カテゴリディレクトリを作成
 mkdir -p security performance readability design testing error-handling other archive
+
+# 各ディレクトリに.gitkeepを作成（空ディレクトリをGitで管理するため）
+touch security/.gitkeep performance/.gitkeep readability/.gitkeep design/.gitkeep \
+      testing/.gitkeep error-handling/.gitkeep other/.gitkeep archive/.gitkeep
 
 # 初期化
 git add .
@@ -221,7 +225,7 @@ npm test  # すべてのテストがパスすることを確認
 
 **ORG_GITHUB_TOKEN の作成**:
 
-1. GitHub Settings → Developer settings → Personal access tokens → **Fine-grained tokens** (推奨)
+1. [GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens](https://github.com/settings/personal-access-tokens/new) (推奨)
 2. 「Generate new token」をクリック
 3. 以下を設定:
    - **Token name**: `review-dojo-org-github-token`
@@ -257,7 +261,11 @@ npm test  # すべてのテストがパスすることを確認
 - 定期的にローテーション
 - 使用しなくなったトークンは即座に削除
 
-#### 1.2.3 Organization Secrets への登録手順
+#### 1.2.3 Secrets への登録手順
+
+Organizationを使用している場合と個人利用の場合で手順が異なります。
+
+##### Organization を使用している場合
 
 1. Organization Settings → Secrets and variables → Actions
 2. 「New organization secret」をクリック
@@ -283,6 +291,44 @@ Name: KNOWLEDGE_REPO_TOKEN
 Secret: （作成したPATを貼り付け）
 Repository access: All repositories
 ```
+
+##### 個人利用の場合（Organization なし）
+
+各リポジトリで個別にSecretsを設定します。
+
+**knowledge-repo リポジトリの場合**:
+
+1. knowledge-repo の Repository Settings → Secrets and variables → Actions
+2. 「New repository secret」をクリック
+3. 以下のSecretsを追加:
+
+```text
+Name: ANTHROPIC_API_KEY
+Secret: sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+```text
+Name: ORG_GITHUB_TOKEN
+Secret: （作成したPATを貼り付け）
+```
+
+```text
+Name: KNOWLEDGE_REPO_TOKEN
+Secret: （作成したPATを貼り付け）
+```
+
+**知見を収集する各リポジトリの場合**:
+
+1. 各リポジトリの Repository Settings → Secrets and variables → Actions
+2. 「New repository secret」をクリック
+3. 以下のSecretを追加:
+
+```text
+Name: ORG_GITHUB_TOKEN
+Secret: （作成したPATを貼り付け）
+```
+
+> **Note**: 個人利用の場合、各リポジトリで `ORG_GITHUB_TOKEN` を設定する必要があります。複数のリポジトリで知見収集を行う場合は、各リポジトリに同じトークンを設定してください。
 
 #### 1.2.4 Secrets の動作確認
 
@@ -629,11 +675,11 @@ Claude Codeが自動的にMCPサーバーの `search_knowledge` ツールを呼�
 |--------|------|-----|
 | `search_knowledge` | 条件で知見を検索 | "SQLに関する知見を探して" |
 | `get_knowledge_detail` | 知見の詳細を取得 | "security/java/SQLインジェクション対策の詳細を見せて" |
+| `generate_pr_checklist` | 変更ファイルから関連知見をチェックリスト化 | "UserDao.javaの変更に関連するチェックリストを生成" |
 | `list_categories` | カテゴリ一覧を取得 | "どんなカテゴリがある？" |
 | `list_languages` | 言語一覧を取得 | "対応している言語は？" |
-| `suggest_for_file` | ファイルに関連する知見を提案 | "UserDao.javaに関連する知見は？" |
 
-#### 2.3.3 検索クエリの例
+#### 2.4.3 検索クエリの例
 
 ```text
 # カテゴリで絞り込み
@@ -649,9 +695,9 @@ UserService.tsに関連する知見をリストして
 パフォーマンスに関するcritical〜warningレベルの知見を、Java言語で検索
 ```
 
-### 2.4 チームメンバーへの展開方法
+### 2.5 チームメンバーへの展開方法
 
-#### 2.4.1 ドキュメントの作成
+#### 2.5.1 ドキュメントの作成
 
 チーム向けのセットアップガイドを作成:
 
@@ -684,7 +730,7 @@ UserService.tsに関連する知見をリストして
    Claude Code で「Javaのセキュリティに関する知見を検索して」と質問
 ```
 
-#### 2.4.2 自動セットアップスクリプト（オプション）
+#### 2.5.2 自動セットアップスクリプト（オプション）
 
 `scripts/setup-mcp.sh` を作成:
 
