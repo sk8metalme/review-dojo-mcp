@@ -520,6 +520,41 @@ jobs:
 
 対象リポジトリで以下の権限を設定:
 
+**方法A: スクリプトで自動設定（推奨）**
+
+`scripts/distribute-workflow.sh` を使用して自動設定できます。
+
+```bash
+# Organization でリポジトリ単位設定
+./scripts/distribute-workflow.sh --setup-permissions YOUR_ORG
+
+# Organization で Org レベル設定（一括）
+./scripts/distribute-workflow.sh --setup-permissions --org-permissions YOUR_ORG
+
+# 個人リポジトリで設定
+./scripts/distribute-workflow.sh --setup-permissions YOUR_USERNAME
+
+# dry-run で事前確認
+./scripts/distribute-workflow.sh --setup-permissions --dry-run YOUR_ORG
+
+# Secretsと権限を一緒に設定
+./scripts/distribute-workflow.sh --setup-secrets --setup-permissions \
+  --org-secrets --org-permissions YOUR_ORG
+```
+
+**Organization と個人利用の違い:**
+
+| 項目 | Organization | 個人 |
+|------|-------------|------|
+| Org レベル設定 | 可能（`--org-permissions`） | 不可 |
+| リポジトリ単位設定 | 可能 | 可能 |
+| 必要スコープ (Org) | `admin:org` | - |
+| 必要スコープ (Repo) | `repo` | `repo` |
+
+**方法B: 手動設定**
+
+各リポジトリで以下の権限を手動設定:
+
 1. Settings → Actions → General → Workflow permissions
 2. 以下を選択:
    - ✅ **Read and write permissions**
