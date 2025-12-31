@@ -18,6 +18,8 @@ EXCLUDE_REPOS=""
 BRANCH_NAME="$DEFAULT_BRANCH_NAME"
 SETUP_SECRETS=false
 ORG_SECRETS=false
+SETUP_PERMISSIONS=false
+ORG_PERMISSIONS=false
 KNOWLEDGE_REPO_NAME="$KNOWLEDGE_REPO"
 
 # カウンター
@@ -53,6 +55,10 @@ Options:
     --org-secrets       Organization Secretsとして設定（Org必須）
     --knowledge-repo <repo>  knowledge-repoの名前（デフォルト: $KNOWLEDGE_REPO）
 
+  Permissions Setup:
+    --setup-permissions Actions権限設定を実行（設定後ワークフロー配布の確認あり）
+    --org-permissions   Organizationレベルで設定（Org必須）
+
   General:
     -h, --help          このヘルプを表示
 
@@ -72,6 +78,15 @@ Examples:
   # Repository Secretsを設定（個人用）
   $(basename "$0") --setup-secrets my-username
 
+  # Actions権限をリポジトリ単位で設定
+  $(basename "$0") --setup-permissions sk8metalme
+
+  # Actions権限をOrganizationレベルで設定
+  $(basename "$0") --setup-permissions --org-permissions sk8metalme
+
+  # Secretsと権限を一緒に設定
+  $(basename "$0") --setup-secrets --setup-permissions --org-secrets --org-permissions sk8metalme
+
 EOF
 }
 
@@ -88,6 +103,16 @@ info() {
 # 警告メッセージ
 warn() {
     echo "[WARN] $1" >&2
+}
+
+# コマンド出力を配列に変換
+read_into_array() {
+    local -n arr="$1"
+    shift
+    arr=()
+    while IFS= read -r line; do
+        arr+=("$line")
+    done < <("$@")
 }
 
 # アカウントタイプを検出（Organization or User）
@@ -125,14 +150,18 @@ check_org_admin() {
 
 # gh CLI スコープを確認
 check_gh_scopes() {
-    if [[ "$ORG_SECRETS" == true ]]; then
+    if [[ "$ORG_SECRETS" == true || "$ORG_PERMISSIONS" == true ]]; then
         local scopes
         # gh api user -i のレスポンスヘッダーから X-OAuth-Scopes を取得
         scopes=$(gh api user -i 2>/dev/null | grep -i '^x-oauth-scopes:' | cut -d: -f2- | tr ',' '\n' | tr -d ' ')
 
         if ! echo "$scopes" | grep -q "admin:org"; then
             warn "admin:org スコープがありません"
-            warn "Organization Secretsを設定するには以下を実行してください:"
+            if [[ "$ORG_SECRETS" == true ]]; then
+                warn "Organization Secretsを設定するには以下を実行してください:"
+            else
+                warn "Organization Permissionsを設定するには以下を実行してください:"
+            fi
             warn "  gh auth refresh -s admin:org"
             return 1
         fi
@@ -273,6 +302,51 @@ setup_repo_secrets() {
     return $failed
 }
 
+# Organization Permissionsを設定
+setup_org_permissions() {
+    local org="$1"
+
+    info "Setting Actions permissions..."
+
+    echo -n "  Workflow permissions       → $org (org-level) ... "
+    if gh api "orgs/$org/actions/permissions/workflow" \
+        -X PUT \
+        -f default_workflow_permissions=write \
+        -F can_approve_pull_request_reviews=true 2>/dev/null; then
+        echo "[OK]"
+        return 0
+    else
+        echo "[FAILED]"
+        return 1
+    fi
+}
+
+# Repository Permissionsを設定
+setup_repo_permissions() {
+    local owner="$1"
+    shift
+    local repos=("$@")
+    local failed=0
+
+    info "Setting Actions permissions..."
+
+    for repo in "${repos[@]}"; do
+        echo -n "  Workflow permissions       → $owner/$repo ... "
+        if gh api "repos/$owner/$repo/actions/permissions/workflow" \
+            -X PUT \
+            -f default_workflow_permissions=write \
+            -F can_approve_pull_request_reviews=true 2>/dev/null; then
+            echo "[OK]"
+        else
+            echo "[FAILED]"
+            failed=$((failed + 1))
+        fi
+    done
+
+    echo ""
+    return $failed
+}
+
 # 引数パース
 parse_args() {
     while [[ $# -gt 0 ]]; do
@@ -332,6 +406,14 @@ parse_args() {
                 ;;
             --org-secrets)
                 ORG_SECRETS=true
+                shift
+                ;;
+            --setup-permissions)
+                SETUP_PERMISSIONS=true
+                shift
+                ;;
+            --org-permissions)
+                ORG_PERMISSIONS=true
                 shift
                 ;;
             --knowledge-repo)
@@ -682,7 +764,7 @@ main() {
         fi
 
         # リポジトリ一覧取得
-        mapfile -t all_repos < <(get_repositories "$TARGET_ORG")
+        read_into_array all_repos get_repositories "$TARGET_ORG"
 
         if [[ ${#all_repos[@]} -eq 0 ]]; then
             error "No repositories found in $TARGET_ORG"
@@ -690,7 +772,7 @@ main() {
         fi
 
         # フィルタリング
-        mapfile -t target_repos < <(filter_repositories "${all_repos[@]}")
+        read_into_array target_repos filter_repositories "${all_repos[@]}"
 
         if [[ ${#target_repos[@]} -eq 0 ]]; then
             error "No target repositories after filtering"
@@ -753,26 +835,165 @@ main() {
         echo ""
     fi
 
+    # Permissions設定モード
+    if [[ "$SETUP_PERMISSIONS" == true ]]; then
+        echo "========================================="
+        echo "Setup Actions Permissions"
+        echo "========================================="
+
+        # アカウントタイプ検出（Secrets設定時に取得していれば再利用）
+        if [[ -z "${account_type:-}" ]]; then
+            local account_type
+            account_type=$(detect_account_type "$TARGET_ORG")
+
+            if [[ "$account_type" == "unknown" ]]; then
+                error "Account '$TARGET_ORG' not found"
+                exit 1
+            fi
+
+            echo "Account Type: $account_type ($TARGET_ORG)"
+        fi
+
+        # Org Permissions モードのバリデーション
+        if [[ "$ORG_PERMISSIONS" == true ]]; then
+            if [[ "$account_type" != "org" ]]; then
+                error "--org-permissions requires an Organization (got: $account_type)"
+                exit 1
+            fi
+
+            echo "Mode: Organization-level Permissions"
+            echo ""
+
+            # スコープチェック
+            if ! check_gh_scopes; then
+                exit 1
+            fi
+
+            # Admin権限チェック
+            if ! check_org_admin "$TARGET_ORG"; then
+                exit 1
+            fi
+        else
+            echo "Mode: Repository-level Permissions"
+            echo ""
+        fi
+
+        # dry-runモード（Org level）
+        if [[ "$DRY_RUN" == true && "$ORG_PERMISSIONS" == true ]]; then
+            info "DRY-RUN mode: Would configure org-level permissions for:"
+            echo ""
+            echo "Organization:"
+            echo "  - $TARGET_ORG"
+            echo ""
+            echo "Settings:"
+            echo "  - default_workflow_permissions: write"
+            echo "  - can_approve_pull_request_reviews: true"
+            echo ""
+            exit 0
+        fi
+
+        # リポジトリ一覧取得（Repository-level の場合）
+        # Secrets設定時に取得していれば再利用
+        if [[ "$ORG_PERMISSIONS" != true ]]; then
+            if [[ ${#all_repos[@]} -eq 0 ]]; then
+                read_into_array all_repos get_repositories "$TARGET_ORG"
+
+                if [[ ${#all_repos[@]} -eq 0 ]]; then
+                    error "No repositories found in $TARGET_ORG"
+                    exit 1
+                fi
+
+                # フィルタリング
+                read_into_array target_repos filter_repositories "${all_repos[@]}"
+
+                if [[ ${#target_repos[@]} -eq 0 ]]; then
+                    error "No target repositories after filtering"
+                    exit 1
+                fi
+            fi
+
+            # dry-runモード（Repository level）
+            if [[ "$DRY_RUN" == true ]]; then
+                info "DRY-RUN mode: Would configure permissions for:"
+                echo ""
+                echo "Repositories:"
+                for repo in "${target_repos[@]}"; do
+                    echo "  - $repo"
+                done
+                echo ""
+                echo "Settings:"
+                echo "  - default_workflow_permissions: write"
+                echo "  - can_approve_pull_request_reviews: true"
+                echo ""
+                exit 0
+            fi
+        fi
+
+        # Permissions設定実行
+        local setup_failed=0
+        if [[ "$ORG_PERMISSIONS" == true ]]; then
+            setup_org_permissions "$TARGET_ORG" || setup_failed=$?
+        else
+            setup_repo_permissions "$TARGET_ORG" "${target_repos[@]}" || setup_failed=$?
+        fi
+
+        # 結果サマリー
+        if [[ "$ORG_PERMISSIONS" == true ]]; then
+            if [[ $setup_failed -eq 0 ]]; then
+                echo ""
+                echo "Total: 1 configured, 0 failed"
+            else
+                echo ""
+                echo "Total: 0 configured, 1 failed"
+            fi
+        else
+            local configured=$((${#target_repos[@]} - setup_failed))
+            echo "Total: $configured configured, $setup_failed failed"
+        fi
+        echo ""
+
+        if [[ $setup_failed -gt 0 ]]; then
+            error "Some permissions failed to configure"
+            exit 1
+        fi
+
+        # ワークフロー配布に進むか確認
+        echo -n "Proceed to distribute workflows? [y/N]: "
+        read -r response
+        if [[ ! "$response" =~ ^[Yy]$ ]]; then
+            info "Permissions setup completed. Skipping workflow distribution."
+            exit 0
+        fi
+
+        echo ""
+        echo "========================================="
+        echo "Distribute Workflows"
+        echo "========================================="
+        echo ""
+    fi
+
     check_workflow_file
 
     if [[ "$DRY_RUN" == true ]]; then
         info "DRY-RUN mode enabled"
     fi
 
-    # リポジトリ一覧取得
-    mapfile -t all_repos < <(get_repositories "$TARGET_ORG")
-
+    # リポジトリ一覧取得（Secrets/Permissions設定時に取得していれば再利用）
     if [[ ${#all_repos[@]} -eq 0 ]]; then
-        error "No repositories found in $TARGET_ORG"
-        exit 1
-    fi
+        read_into_array all_repos get_repositories "$TARGET_ORG"
 
-    # フィルタリング
-    mapfile -t target_repos < <(filter_repositories "${all_repos[@]}")
+        if [[ ${#all_repos[@]} -eq 0 ]]; then
+            error "No repositories found in $TARGET_ORG"
+            exit 1
+        fi
 
-    if [[ ${#target_repos[@]} -eq 0 ]]; then
-        error "No target repositories after filtering"
-        exit 1
+        # フィルタリング
+        read_into_array target_repos filter_repositories "${all_repos[@]}"
+
+        if [[ ${#target_repos[@]} -eq 0 ]]; then
+            error "No target repositories after filtering"
+            exit 1
+        fi
     fi
 
     info "Target repositories: ${#target_repos[@]}"
