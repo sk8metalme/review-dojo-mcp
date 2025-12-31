@@ -105,6 +105,16 @@ warn() {
     echo "[WARN] $1" >&2
 }
 
+# コマンド出力を配列に変換
+read_into_array() {
+    local -n arr="$1"
+    shift
+    arr=()
+    while IFS= read -r line; do
+        arr+=("$line")
+    done < <("$@")
+}
+
 # アカウントタイプを検出（Organization or User）
 detect_account_type() {
     local name="$1"
@@ -754,10 +764,7 @@ main() {
         fi
 
         # リポジトリ一覧取得
-        all_repos=()
-        while IFS= read -r repo; do
-            all_repos+=("$repo")
-        done < <(get_repositories "$TARGET_ORG")
+        read_into_array all_repos get_repositories "$TARGET_ORG"
 
         if [[ ${#all_repos[@]} -eq 0 ]]; then
             error "No repositories found in $TARGET_ORG"
@@ -765,10 +772,7 @@ main() {
         fi
 
         # フィルタリング
-        target_repos=()
-        while IFS= read -r repo; do
-            target_repos+=("$repo")
-        done < <(filter_repositories "${all_repos[@]}")
+        read_into_array target_repos filter_repositories "${all_repos[@]}"
 
         if [[ ${#target_repos[@]} -eq 0 ]]; then
             error "No target repositories after filtering"
@@ -837,16 +841,18 @@ main() {
         echo "Setup Actions Permissions"
         echo "========================================="
 
-        # アカウントタイプ検出
-        local account_type
-        account_type=$(detect_account_type "$TARGET_ORG")
+        # アカウントタイプ検出（Secrets設定時に取得していれば再利用）
+        if [[ -z "${account_type:-}" ]]; then
+            local account_type
+            account_type=$(detect_account_type "$TARGET_ORG")
 
-        if [[ "$account_type" == "unknown" ]]; then
-            error "Account '$TARGET_ORG' not found"
-            exit 1
+            if [[ "$account_type" == "unknown" ]]; then
+                error "Account '$TARGET_ORG' not found"
+                exit 1
+            fi
+
+            echo "Account Type: $account_type ($TARGET_ORG)"
         fi
-
-        echo "Account Type: $account_type ($TARGET_ORG)"
 
         # Org Permissions モードのバリデーション
         if [[ "$ORG_PERMISSIONS" == true ]]; then
@@ -887,26 +893,23 @@ main() {
         fi
 
         # リポジトリ一覧取得（Repository-level の場合）
+        # Secrets設定時に取得していれば再利用
         if [[ "$ORG_PERMISSIONS" != true ]]; then
-            all_repos=()
-            while IFS= read -r repo; do
-                all_repos+=("$repo")
-            done < <(get_repositories "$TARGET_ORG")
-
             if [[ ${#all_repos[@]} -eq 0 ]]; then
-                error "No repositories found in $TARGET_ORG"
-                exit 1
-            fi
+                read_into_array all_repos get_repositories "$TARGET_ORG"
 
-            # フィルタリング
-            target_repos=()
-            while IFS= read -r repo; do
-                target_repos+=("$repo")
-            done < <(filter_repositories "${all_repos[@]}")
+                if [[ ${#all_repos[@]} -eq 0 ]]; then
+                    error "No repositories found in $TARGET_ORG"
+                    exit 1
+                fi
 
-            if [[ ${#target_repos[@]} -eq 0 ]]; then
-                error "No target repositories after filtering"
-                exit 1
+                # フィルタリング
+                read_into_array target_repos filter_repositories "${all_repos[@]}"
+
+                if [[ ${#target_repos[@]} -eq 0 ]]; then
+                    error "No target repositories after filtering"
+                    exit 1
+                fi
             fi
 
             # dry-runモード（Repository level）
@@ -975,26 +978,22 @@ main() {
         info "DRY-RUN mode enabled"
     fi
 
-    # リポジトリ一覧取得
-    all_repos=()
-    while IFS= read -r repo; do
-        all_repos+=("$repo")
-    done < <(get_repositories "$TARGET_ORG")
-
+    # リポジトリ一覧取得（Secrets/Permissions設定時に取得していれば再利用）
     if [[ ${#all_repos[@]} -eq 0 ]]; then
-        error "No repositories found in $TARGET_ORG"
-        exit 1
-    fi
+        read_into_array all_repos get_repositories "$TARGET_ORG"
 
-    # フィルタリング
-    target_repos=()
-    while IFS= read -r repo; do
-        target_repos+=("$repo")
-    done < <(filter_repositories "${all_repos[@]}")
+        if [[ ${#all_repos[@]} -eq 0 ]]; then
+            error "No repositories found in $TARGET_ORG"
+            exit 1
+        fi
 
-    if [[ ${#target_repos[@]} -eq 0 ]]; then
-        error "No target repositories after filtering"
-        exit 1
+        # フィルタリング
+        read_into_array target_repos filter_repositories "${all_repos[@]}"
+
+        if [[ ${#target_repos[@]} -eq 0 ]]; then
+            error "No target repositories after filtering"
+            exit 1
+        fi
     fi
 
     info "Target repositories: ${#target_repos[@]}"
