@@ -225,7 +225,7 @@ npm test  # すべてのテストがパスすることを確認
 
 **ORG_GITHUB_TOKEN の作成**:
 
-1. GitHub Settings → Developer settings → Personal access tokens → **Fine-grained tokens** (推奨)
+1. [GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens](https://github.com/settings/tokens?type=beta) (推奨)
 2. 「Generate new token」をクリック
 3. 以下を設定:
    - **Token name**: `review-dojo-org-github-token`
@@ -261,7 +261,11 @@ npm test  # すべてのテストがパスすることを確認
 - 定期的にローテーション
 - 使用しなくなったトークンは即座に削除
 
-#### 1.2.3 Organization Secrets への登録手順
+#### 1.2.3 Secrets への登録手順
+
+Organizationを使用している場合と個人利用の場合で手順が異なります。
+
+##### Organization を使用している場合
 
 1. Organization Settings → Secrets and variables → Actions
 2. 「New organization secret」をクリック
@@ -287,6 +291,44 @@ Name: KNOWLEDGE_REPO_TOKEN
 Secret: （作成したPATを貼り付け）
 Repository access: All repositories
 ```
+
+##### 個人利用の場合（Organization なし）
+
+各リポジトリで個別にSecretsを設定します。
+
+**knowledge-repo リポジトリの場合**:
+
+1. knowledge-repo の Repository Settings → Secrets and variables → Actions
+2. 「New repository secret」をクリック
+3. 以下のSecretsを追加:
+
+```text
+Name: ANTHROPIC_API_KEY
+Secret: sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+```text
+Name: ORG_GITHUB_TOKEN
+Secret: （作成したPATを貼り付け）
+```
+
+```text
+Name: KNOWLEDGE_REPO_TOKEN
+Secret: （作成したPATを貼り付け）
+```
+
+**知見を収集する各リポジトリの場合**:
+
+1. 各リポジトリの Repository Settings → Secrets and variables → Actions
+2. 「New repository secret」をクリック
+3. 以下のSecretを追加:
+
+```text
+Name: ORG_GITHUB_TOKEN
+Secret: （作成したPATを貼り付け）
+```
+
+> **Note**: 個人利用の場合、各リポジトリで `ORG_GITHUB_TOKEN` を設定する必要があります。複数のリポジトリで知見収集を行う場合は、各リポジトリに同じトークンを設定してください。
 
 #### 1.2.4 Secrets の動作確認
 
