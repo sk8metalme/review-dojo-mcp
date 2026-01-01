@@ -792,7 +792,7 @@ main() {
         fi
 
         # 結果サマリー
-        local configured=$((3 - setup_failed))
+        local configured=$((2 - setup_failed))
         echo "Total: $configured configured, $setup_failed failed"
         echo ""
 
