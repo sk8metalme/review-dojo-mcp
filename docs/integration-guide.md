@@ -175,8 +175,7 @@ git push origin main
 | Secret名 | スコープ | 用途 | 必要な権限 |
 |----------|----------|------|-----------|
 | `ANTHROPIC_API_KEY` | Organization | Claude API呼び出し | N/A |
-| `ORG_GITHUB_TOKEN` | Organization | org内リポジトリのPR情報取得 | `repo`, `read:org` |
-| `KNOWLEDGE_REPO_TOKEN` | Organization | knowledge-repoへのpush | `repo` (Contents: Write) |
+| `ORG_GITHUB_TOKEN` | Organization | org内リポジトリのPR情報取得とknowledge-repoへのpush | 下記参照 |
 
 #### 1.3.2 Personal Access Token (PAT) の作成手順
 
@@ -185,33 +184,25 @@ git push origin main
 1. [GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens](https://github.com/settings/personal-access-tokens/new) (推奨)
 2. 「Generate new token」をクリック
 3. 以下を設定:
-   - **Token name**: `review-dojo-org-github-token`
+   - **Token name**: `review-dojo-org-token`
    - **Expiration**: 90 days（定期的な更新を推奨）
    - **Resource owner**: Your Organization
-   - **Repository access**: All repositories（または対象リポジトリのみ）
+   - **Repository access**: All repositories
    - **Permissions**:
-     - Repository permissions:
-       - `Actions`: Read and write（repository_dispatch イベントのトリガーに必要）
-       - `Contents`: Read and write（PR情報とファイルへのアクセスに必要）
-       - `Pull requests`: Read-only
+     - Repository permissions（全リポジトリに適用）:
+       - `Pull requests`: Read-only（PR情報の取得に必要）
+       - `Contents`: Read-only（PR内容の取得に必要）
        - `Metadata`: Read-only（自動付与）
+     - Repository permissions（knowledge-repoのみに適用）:
+       - `Actions`: Read and write（repository_dispatch イベントのトリガーに必要）
+       - `Contents`: Read and write（知見ファイルのpushに必要）
+       - `Workflows`: Read and write（ワークフローファイルの更新に必要）
      - Organization permissions:
        - `Members`: Read-only
 4. 「Generate token」をクリック
 5. トークンをコピー（一度しか表示されません）
 
-**KNOWLEDGE_REPO_TOKEN の作成**:
-
-1. 同様の手順で新しいトークンを作成
-2. 以下を設定:
-   - **Token name**: `review-dojo-knowledge-repo-token`
-   - **Repository access**: Only select repositories → `your-knowledge-repo` を選択
-   - **Permissions**:
-     - Repository permissions:
-       - `Contents`: Read and write
-       - `Workflows`: Read and write
-       - `Metadata`: Read-only（自動付与）
-3. 「Generate token」をクリック
+**重要**: Fine-grained PATでは、リポジトリ単位で異なる権限を設定できます。上記の設定により、1つのトークンで安全に全ての操作を実行できます。
 
 **セキュリティのベストプラクティス**:
 - トークンは最小限の権限のみ付与
@@ -247,14 +238,12 @@ Mode: Organization Secrets
 Enter secrets (input will be hidden):
   ANTHROPIC_API_KEY: ********
   ORG_GITHUB_TOKEN: ********
-  KNOWLEDGE_REPO_TOKEN: ********
 
 Setting secrets...
   ANTHROPIC_API_KEY      → my-org (repos: review-dojo-knowledge) ... [OK]
   ORG_GITHUB_TOKEN       → my-org (visibility: all) ... [OK]
-  KNOWLEDGE_REPO_TOKEN   → my-org (repos: review-dojo-knowledge) ... [OK]
 
-Total: 3 configured, 0 failed
+Total: 2 configured, 0 failed
 
 Proceed to distribute workflows? [y/N]:
 ```
@@ -1004,8 +993,7 @@ Screwdriver の Settings → Secrets で設定:
 
 | Token | 最小権限 |
 |-------|---------|
-| `ORG_GITHUB_TOKEN` | `repo`（read-only）, `read:org` |
-| `KNOWLEDGE_REPO_TOKEN` | `repo`（write to knowledge-repo only） |
+| `ORG_GITHUB_TOKEN` | 全リポジトリ: `Pull requests`（read-only）, `Contents`（read-only）<br>knowledge-repoのみ: `Actions`, `Contents`, `Workflows`（read-write） |
 | `ANTHROPIC_API_KEY` | 必要に応じてAPI使用量制限を設定 |
 
 ### Private リポジトリの除外設定
@@ -1038,7 +1026,7 @@ review-dojoは以下のパターンを自動的にマスク:
 ### Phase 1: 知見収集
 - [ ] knowledge-repo リポジトリを作成（空のリポジトリ + カテゴリディレクトリ）
 - [ ] knowledge-repo に collect-review-knowledge.yml を配置
-- [ ] GitHub Secrets を設定（ANTHROPIC_API_KEY, ORG_GITHUB_TOKEN, KNOWLEDGE_REPO_TOKEN）
+- [ ] GitHub Secrets を設定（ANTHROPIC_API_KEY, ORG_GITHUB_TOKEN）
 - [ ] 対象リポジトリに trigger-knowledge-collection.yml を配置
 - [ ] trigger-knowledge-collection.yml の repository を自組織に変更
 - [ ] GitHub Actions 権限を設定（Read and write permissions）
