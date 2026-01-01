@@ -110,7 +110,7 @@ on:
 1. Personal Access Tokenを再作成
 2. 必要な権限を確認:
    - `ORG_GITHUB_TOKEN`（**全Organization内リポジトリに適用**）:
-     - `Pull requests`: Read-only
+     - `Pull requests`: **Read and write**（コメント投稿に必要）
      - `Contents`: **Read and write**
      - `Actions`: Read and write
      - `Workflows`: Read and write

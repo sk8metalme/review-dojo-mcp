@@ -190,7 +190,7 @@ git push origin main
    - **Repository access**: **All repositories**
    - **Permissions**（全リポジトリに適用されます）:
      - Repository permissions:
-       - `Pull requests`: Read-only（PR情報の取得に必要）
+       - `Pull requests`: **Read and write**（PR情報の取得とコメント投稿に必要）
        - `Contents`: **Read and write**（PR内容の取得とknowledge-repoへのpushに必要）
        - `Actions`: Read and write（repository_dispatch イベントのトリガーに必要）
        - `Workflows`: Read and write（ワークフローファイルの更新に必要）
@@ -998,7 +998,7 @@ Screwdriver の Settings → Secrets で設定:
 
 | Token | 権限 |
 |-------|------|
-| `ORG_GITHUB_TOKEN` | **全Organization内リポジトリに適用**:<br>`Pull requests`: Read-only<br>`Contents`: **Read and write**<br>`Actions`: Read and write<br>`Workflows`: Read and write |
+| `ORG_GITHUB_TOKEN` | **全Organization内リポジトリに適用**:<br>`Pull requests`: **Read and write**<br>`Contents`: **Read and write**<br>`Actions`: Read and write<br>`Workflows`: Read and write |
 | `ANTHROPIC_API_KEY` | 必要に応じてAPI使用量制限を設定 |
 
 **重要**: Fine-grained PATの「All repositories」モードでは、選択した全リポジトリに同じ権限が適用されます。knowledge-repoのみに書き込み権限を限定することはできません。
