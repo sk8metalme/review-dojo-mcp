@@ -13,8 +13,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Note: peter-evans/repository-dispatch@v4 requires Actions Runner v2.327.1+ for self-hosted runners.
+      # This workflow uses GitHub-hosted runners (ubuntu-latest), so no runner upgrade is needed.
+      # All inputs (token, repository, event-type, client-payload) remain compatible with v4.
       - name: Send repository dispatch to knowledge-repo
-        uses: peter-evans/repository-dispatch@v2
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          MERGED_BY: ${{ github.event.pull_request.merged_by.login }}
+        uses: peter-evans/repository-dispatch@v4
         with:
           # knowledge-repoのリポジトリ情報を指定
           token: ${{ secrets.ORG_GITHUB_TOKEN }}
@@ -26,8 +32,8 @@ jobs:
               "repo_owner": "${{ github.repository_owner }}",
               "repo_name": "${{ github.event.repository.name }}",
               "pr_number": "${{ github.event.pull_request.number }}",
-              "pr_title": "${{ github.event.pull_request.title }}",
-              "merged_by": "${{ github.event.pull_request.merged_by.login }}",
+              "pr_title": ${{ toJSON(env.PR_TITLE) }},
+              "merged_by": ${{ toJSON(env.MERGED_BY) }},
               "merged_at": "${{ github.event.pull_request.merged_at }}"
             }
 
