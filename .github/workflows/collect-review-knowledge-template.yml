@@ -48,7 +48,7 @@ jobs:
           fi
 
       - name: Collect knowledge
-        uses: ${{ vars.REVIEW_DOJO_ACTION || 'sk8metalme/review-dojo-action' }}@${{ vars.REVIEW_DOJO_ACTION_VERSION || 'v1' }}
+        uses: sk8metalme/review-dojo-action@v1
         id: collect
         with:
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}

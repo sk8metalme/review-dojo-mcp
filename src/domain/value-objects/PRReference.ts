@@ -5,12 +5,19 @@ import { getGitHubConfig } from '../../config/github.js';
  */
 export class PRReference {
   /**
+   * ホスト名を正規表現用にエスケープ
+   */
+  private static escapeHostForRegex(host: string): string {
+    return host.replace(/\./g, '\\.');
+  }
+
+  /**
    * GitHub PR URLパターンを動的に生成
    * GitHub Enterprise対応のため、ホスト名を環境変数から取得
    */
   private static getGitHubPRPattern(): RegExp {
     const { host } = getGitHubConfig();
-    const escapedHost = host.replace(/\./g, '\\.');
+    const escapedHost = PRReference.escapeHostForRegex(host);
     return new RegExp(`^https:\\/\\/${escapedHost}\\/[^/]+\\/[^/]+\\/pull\\/\\d+$`);
   }
 
@@ -52,7 +59,7 @@ export class PRReference {
    */
   getOwner(): string {
     const { host } = getGitHubConfig();
-    const escapedHost = host.replace(/\./g, '\\.');
+    const escapedHost = PRReference.escapeHostForRegex(host);
     const match = this.url.match(new RegExp(`${escapedHost}\\/([^/]+)\\/`));
     if (!match) {
       throw new Error(`Failed to extract owner from URL: ${this.url}`);
@@ -65,7 +72,7 @@ export class PRReference {
    */
   getRepository(): string {
     const { host } = getGitHubConfig();
-    const escapedHost = host.replace(/\./g, '\\.');
+    const escapedHost = PRReference.escapeHostForRegex(host);
     const match = this.url.match(new RegExp(`${escapedHost}\\/[^/]+\\/([^/]+)\\/`));
     if (!match) {
       throw new Error(`Failed to extract repository from URL: ${this.url}`);
