@@ -8,7 +8,7 @@
 - **2026-01-13** GitHub Enterprise対応では環境変数で設定を外部化する
   - GITHUB_HOST: GitHubホスト名（デフォルト: `github.com`）
   - GITHUB_API_URL: GitHub API URL（デフォルト: 自動検出）
-  - GITHUB_ORG_NAME: 組織名（デフォルト: `sk8metalme`）
+  - GITHUB_ORG_NAME: 組織名（デフォルト: `yourorg`）
   - 設定は `src/config/github.ts` に中央集約し、各モジュールはこれを参照
 
 - **2026-01-13** Value Objectパターンで動的設定に対応する
@@ -19,13 +19,13 @@
 <!-- 誤った作業、やり直した作業、ハマったポイント -->
 
 - **2026-01-13** GitHub Actions の `workflow_call` input default には式を使用できない
-  - 誤り: `default: ${{ vars.KNOWLEDGE_REPO || 'sk8metalme/review-dojo' }}`
-  - 正しい: `default: 'sk8metalme/review-dojo'` （リテラル値のみ）
+  - 誤り: `default: ${{ vars.KNOWLEDGE_REPO || 'yourorg/review-dojo' }}`
+  - 正しい: `default: 'yourorg/review-dojo'` （リテラル値のみ）
   - workflow_call の input default は静的な値のみ受け付ける
 
 - **2026-01-13** GitHub Actions の `uses:` フィールドには動的式を使用できない
-  - 誤り: `uses: ${{ vars.REVIEW_DOJO_ACTION || 'sk8metalme/review-dojo-action' }}@v1`
-  - 正しい: `uses: sk8metalme/review-dojo-action@v1` （静的参照のみ）
+  - 誤り: `uses: ${{ vars.REVIEW_DOJO_ACTION || 'yourorg/review-dojo-action' }}@v1`
+  - 正しい: `uses: yourorg/review-dojo-action@v1` （静的参照のみ）
   - actionlint で検出される問題。GitHub Actions の制約として uses は静的参照が必須
 
 - **2026-01-13** 正規表現でホスト名をエスケープする際は全メタキャラクタをエスケープする
