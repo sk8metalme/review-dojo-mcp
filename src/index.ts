@@ -2,6 +2,7 @@
 
 import { fileURLToPath } from 'node:url';
 import { CheckKnowledgeCli } from './interfaces/cli/CheckKnowledgeCli.js';
+import { getGitHubConfig } from './config/github.js';
 
 /**
  * メインエントリーポイント
@@ -21,11 +22,12 @@ async function main() {
     }
 
     default: {
+      const { webUrl, orgName } = getGitHubConfig();
       console.error('Unknown command:', command);
       console.error('Usage: node dist/index.js check [options]');
       console.error('');
       console.error('For apply functionality, use review-dojo-action:');
-      console.error('  https://github.com/sk8metalme/review-dojo-action');
+      console.error(`  ${webUrl}/${orgName}/review-dojo-action`);
       process.exit(1);
       break;
     }

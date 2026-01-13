@@ -4,6 +4,7 @@ import { Category } from '../../domain/value-objects/Category.js';
 import { Language } from '../../domain/value-objects/Language.js';
 import { IKnowledgeRepository } from '../../application/ports/IKnowledgeRepository.js';
 import { IMarkdownSerializer } from '../../application/ports/IMarkdownSerializer.js';
+import { getGitHubConfig } from '../../config/github.js';
 
 /**
  * GitHub API ベースの Knowledge Repository 実装（読み取り専用）
@@ -29,7 +30,13 @@ export class GitHubKnowledgeRepository implements IKnowledgeRepository {
 
     this.owner = parts[0];
     this.repo = parts[1];
-    this.octokit = new Octokit({ auth: token });
+
+    // GitHub Enterprise対応: 環境変数からAPI URLを取得
+    const { apiUrl } = getGitHubConfig();
+    this.octokit = new Octokit({
+      auth: token,
+      baseUrl: apiUrl,
+    });
     this.cache = new Map();
   }
 

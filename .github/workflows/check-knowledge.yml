@@ -11,7 +11,7 @@ on:
       knowledge_repo:
         description: 'Knowledge repository (owner/repo format)'
         required: false
-        default: 'sk8metalme/review-dojo'
+        default: ${{ vars.KNOWLEDGE_REPO || 'sk8metalme/review-dojo' }}
         type: string
       knowledge_branch:
         description: 'Knowledge repository branch'
