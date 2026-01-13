@@ -24,7 +24,7 @@ describe('getGitHubConfig', () => {
 
       expect(config.host).toBe('github.com');
       expect(config.apiUrl).toBe('https://api.github.com');
-      expect(config.orgName).toBe('sk8metalme');
+      expect(config.orgName).toBe('yourorg');
       expect(config.webUrl).toBe('https://github.com');
     });
   });
@@ -81,7 +81,7 @@ describe('getGitHubConfig', () => {
 
       expect(config.host).toBe('github.example.com');
       expect(config.apiUrl).toBe('https://github.example.com/api/v3');
-      expect(config.orgName).toBe('sk8metalme'); // デフォルト
+      expect(config.orgName).toBe('yourorg'); // デフォルト
       expect(config.webUrl).toBe('https://github.example.com');
     });
 

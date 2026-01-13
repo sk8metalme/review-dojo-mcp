@@ -7,7 +7,7 @@ export interface GitHubConfig {
   host: string;
   /** GitHub API URL (例: https://api.github.com or https://github.example.com/api/v3) */
   apiUrl: string;
-  /** 組織名 (例: sk8metalme or my-org) */
+  /** 組織名 (例: yourorg or my-org) */
   orgName: string;
   /** GitHub Web URL (例: https://github.com or https://github.example.com) */
   webUrl: string;
@@ -21,7 +21,7 @@ export interface GitHubConfig {
  * @example
  * // デフォルト（github.com）
  * const config = getGitHubConfig();
- * // => { host: 'github.com', apiUrl: 'https://api.github.com', orgName: 'sk8metalme', webUrl: 'https://github.com' }
+ * // => { host: 'github.com', apiUrl: 'https://api.github.com', orgName: 'yourorg', webUrl: 'https://github.com' }
  *
  * @example
  * // GitHub Enterprise
@@ -38,7 +38,7 @@ export function getGitHubConfig(): GitHubConfig {
     host,
     apiUrl:
       process.env.GITHUB_API_URL || (isGHE ? `https://${host}/api/v3` : 'https://api.github.com'),
-    orgName: process.env.GITHUB_ORG_NAME || 'sk8metalme',
+    orgName: process.env.GITHUB_ORG_NAME || 'yourorg',
     webUrl: `https://${host}`,
   };
 }

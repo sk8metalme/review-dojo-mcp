@@ -134,7 +134,7 @@ jobs:
           fi
 
       - name: Collect knowledge
-        uses: sk8metalme/review-dojo-action@main
+        uses: yourorg/review-dojo-action@main
         id: collect
         with:
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -342,7 +342,7 @@ cd $REVIEW_DOJO_MCP
 
 **変更前**:
 ```yaml
-repository: sk8metalme/review-dojo-knowledge
+repository: yourorg/review-dojo-knowledge
 ```
 
 **変更後**:
@@ -515,7 +515,7 @@ cat security/java.md
 ```bash
 # 適切な場所にクローン（例: ~/projects/）
 cd ~/projects
-git clone https://github.com/sk8metalme/review-dojo-mcp.git
+git clone https://github.com/yourorg/review-dojo-mcp.git
 cd review-dojo-mcp
 ```
 
@@ -774,7 +774,7 @@ UserService.tsに関連する知見をリストして
 1. **review-dojo-mcp をクローン**
    \`\`\`bash
    cd ~/projects
-   git clone https://github.com/sk8metalme/review-dojo-mcp.git
+   git clone https://github.com/yourorg/review-dojo-mcp.git
    cd review-dojo-mcp
    npm install
    npm run build
@@ -960,7 +960,7 @@ jobs:
           fi
 
           # review-dojo-mcp（MCPサーバー/check機能）をクローン
-          git clone --depth 1 https://github.com/sk8metalme/review-dojo-mcp.git mcp-repo
+          git clone --depth 1 https://github.com/yourorg/review-dojo-mcp.git mcp-repo
           cd mcp-repo
           npm ci
           npm run build
@@ -1083,5 +1083,5 @@ review-dojoは以下のパターンを自動的にマスク:
 
 ## サポート
 
-- [GitHub Issues](https://github.com/sk8metalme/review-dojo-mcp/issues)
+- [GitHub Issues](https://github.com/yourorg/review-dojo-mcp/issues)
 - [README.md](../README.md)（詳細な機能説明）

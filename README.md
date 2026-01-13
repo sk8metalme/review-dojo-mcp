@@ -28,7 +28,7 @@ GitHub PRのレビューコメントから有益な指摘を自動収集・蓄�
 ### ローカルで試す（2分）
 
 ```bash
-git clone https://github.com/sk8metalme/review-dojo-mcp.git
+git clone https://github.com/yourorg/review-dojo-mcp.git
 cd review-dojo-mcp
 npm install
 npm run build
@@ -61,7 +61,7 @@ GitHub Enterprise (GHE) 環境で使用する場合は、以下の環境変数�
 |---------|------|------------|-----|
 | `GITHUB_HOST` | GitHubホスト名 | `github.com` | `github.example.com` |
 | `GITHUB_API_URL` | GitHub API URL | `https://api.github.com` | `https://github.example.com/api/v3` |
-| `GITHUB_ORG_NAME` | 組織名 | `sk8metalme` | `my-org` |
+| `GITHUB_ORG_NAME` | 組織名 | `yourorg` | `my-org` |
 
 ### 設定例
 
