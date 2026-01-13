@@ -28,7 +28,7 @@ GitHub PRのレビューコメントから有益な指摘を自動収集・蓄�
 ### ローカルで試す（2分）
 
 ```bash
-git clone https://github.com/sk8metalme/review-dojo-mcp.git
+git clone https://github.com/yourorg/review-dojo-mcp.git
 cd review-dojo-mcp
 npm install
 npm run build
@@ -50,6 +50,52 @@ Claude Code で「Javaのセキュリティに関する知見を検索して」�
 - Phase 1: 知見収集システム（30-45分）
 - Phase 2: MCPサーバー導入（10-15分）
 - Phase 3: CI/CD連携（15-20分）
+
+## GitHub Enterprise対応
+
+GitHub Enterprise (GHE) 環境で使用する場合は、以下の環境変数を設定してください。
+
+### 環境変数
+
+| 環境変数 | 説明 | デフォルト値 | 例 |
+|---------|------|------------|-----|
+| `GITHUB_HOST` | GitHubホスト名 | `github.com` | `github.example.com` |
+| `GITHUB_API_URL` | GitHub API URL | `https://api.github.com` | `https://github.example.com/api/v3` |
+| `GITHUB_ORG_NAME` | 組織名 | `yourorg` | `my-org` |
+
+### 設定例
+
+#### MCP設定（claude_desktop_config.json）
+
+```json
+{
+  "mcpServers": {
+    "review-dojo": {
+      "command": "node",
+      "args": ["/path/to/review-dojo-mcp/dist/interfaces/mcp/McpServer.js"],
+      "env": {
+        "GITHUB_HOST": "github.example.com",
+        "GITHUB_API_URL": "https://github.example.com/api/v3",
+        "GITHUB_ORG_NAME": "my-org",
+        "GITHUB_TOKEN": "ghp_xxx",
+        "REVIEW_DOJO_GITHUB_REPO": "my-org/review-dojo-knowledge"
+      }
+    }
+  }
+}
+```
+
+#### GitHub Actions
+
+GitHub Actionsでは、Repository Variables を使用してカスタマイズできます：
+
+| Variable | 用途 | 例 |
+|---------|------|-----|
+| `KNOWLEDGE_REPO` | 知見リポジトリ | `my-org/review-dojo-knowledge` |
+| `REVIEW_DOJO_ACTION` | review-dojo-action の参照 | `my-org/review-dojo-action` |
+| `REVIEW_DOJO_ACTION_VERSION` | action のバージョン | `v1` |
+
+詳細は **[統合ガイド](docs/integration-guide.md)** を参照してください。
 
 ## Phase機能一覧
 

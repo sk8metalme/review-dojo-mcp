@@ -1,8 +1,26 @@
+import { getGitHubConfig } from '../../config/github.js';
+
 /**
  * Pull RequestのURL参照を表すValue Object
  */
 export class PRReference {
-  private static readonly GITHUB_PR_PATTERN = /^https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+$/;
+  /**
+   * ホスト名を正規表現用にエスケープ
+   * すべての正規表現メタキャラクタをエスケープして安全な文字列にする
+   */
+  private static escapeHostForRegex(host: string): string {
+    return host.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
+   * GitHub PR URLパターンを動的に生成
+   * GitHub Enterprise対応のため、ホスト名を環境変数から取得
+   */
+  private static getGitHubPRPattern(): RegExp {
+    const { host } = getGitHubConfig();
+    const escapedHost = PRReference.escapeHostForRegex(host);
+    return new RegExp(`^https:\\/\\/${escapedHost}\\/[^/]+\\/[^/]+\\/pull\\/\\d+$`);
+  }
 
   private constructor(private readonly url: string) {}
 
@@ -12,9 +30,10 @@ export class PRReference {
     }
 
     // GitHub PR URLの形式をチェック
-    if (!PRReference.GITHUB_PR_PATTERN.test(url)) {
+    if (!PRReference.getGitHubPRPattern().test(url)) {
+      const { host } = getGitHubConfig();
       throw new Error(
-        `Invalid PR reference URL: ${url}. Must be a GitHub PR URL (e.g., https://github.com/owner/repo/pull/123)`
+        `Invalid PR reference URL: ${url}. Must be a GitHub PR URL (e.g., https://${host}/owner/repo/pull/123)`
       );
     }
 
@@ -40,7 +59,9 @@ export class PRReference {
    * リポジトリオーナーを抽出
    */
   getOwner(): string {
-    const match = this.url.match(/github\.com\/([^/]+)\//);
+    const { host } = getGitHubConfig();
+    const escapedHost = PRReference.escapeHostForRegex(host);
+    const match = this.url.match(new RegExp(`${escapedHost}\\/([^/]+)\\/`));
     if (!match) {
       throw new Error(`Failed to extract owner from URL: ${this.url}`);
     }
@@ -51,7 +72,9 @@ export class PRReference {
    * リポジトリ名を抽出
    */
   getRepository(): string {
-    const match = this.url.match(/github\.com\/[^/]+\/([^/]+)\//);
+    const { host } = getGitHubConfig();
+    const escapedHost = PRReference.escapeHostForRegex(host);
+    const match = this.url.match(new RegExp(`${escapedHost}\\/[^/]+\\/([^/]+)\\/`));
     if (!match) {
       throw new Error(`Failed to extract repository from URL: ${this.url}`);
     }

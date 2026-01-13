@@ -66,31 +66,31 @@ Options:
 
 Examples:
   # ワークフロー配布のみ
-  $(basename "$0") sk8metalme
+  $(basename "$0") yourorg
 
   # dry-runで確認
-  $(basename "$0") --dry-run sk8metalme
+  $(basename "$0") --dry-run yourorg
 
   # 特定リポジトリのみ
-  $(basename "$0") --repos "repo1,repo2" sk8metalme
+  $(basename "$0") --repos "repo1,repo2" yourorg
 
   # Organization Secretsを設定してから配布
-  $(basename "$0") --setup-secrets --org-secrets sk8metalme
+  $(basename "$0") --setup-secrets --org-secrets yourorg
 
   # Repository Secretsを設定（個人用）
   $(basename "$0") --setup-secrets my-username
 
   # Actions権限をリポジトリ単位で設定
-  $(basename "$0") --setup-permissions sk8metalme
+  $(basename "$0") --setup-permissions yourorg
 
   # Actions権限をOrganizationレベルで設定
-  $(basename "$0") --setup-permissions --org-permissions sk8metalme
+  $(basename "$0") --setup-permissions --org-permissions yourorg
 
   # Secretsと権限を一緒に設定
-  $(basename "$0") --setup-secrets --setup-permissions --org-secrets --org-permissions sk8metalme
+  $(basename "$0") --setup-secrets --setup-permissions --org-secrets --org-permissions yourorg
 
   # knowledge-repoへワークフロー配布
-  $(basename "$0") --setup-knowledge-repo sk8metalme
+  $(basename "$0") --setup-knowledge-repo yourorg
 
 EOF
 }

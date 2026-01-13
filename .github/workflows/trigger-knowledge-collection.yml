@@ -24,7 +24,7 @@ jobs:
         with:
           # knowledge-repoのリポジトリ情報を指定
           token: ${{ secrets.ORG_GITHUB_TOKEN }}
-          repository: sk8metalme/review-dojo-knowledge
+          repository: ${{ vars.KNOWLEDGE_REPO || 'yourorg/review-dojo-knowledge' }}
           event-type: pr-merged
           client-payload: |
             {

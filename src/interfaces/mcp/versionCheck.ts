@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import semver from 'semver';
+import { getGitHubConfig } from '../../config/github.js';
 
 export interface VersionCheckResult {
   currentVersion: string;
@@ -18,11 +19,13 @@ export interface VersionCheckResult {
  */
 export async function checkForUpdates(installDir?: string): Promise<VersionCheckResult | null> {
   try {
-    const octokit = new Octokit();
+    // GitHub Enterprise対応: 環境変数からAPI URLと組織名を取得
+    const { apiUrl, orgName } = getGitHubConfig();
+    const octokit = new Octokit({ baseUrl: apiUrl });
 
     // 最新リリースを取得
     const { data: release } = await octokit.repos.getLatestRelease({
-      owner: 'sk8metalme',
+      owner: orgName,
       repo: 'review-dojo',
     });
 
