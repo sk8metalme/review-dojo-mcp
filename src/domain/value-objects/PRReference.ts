@@ -6,9 +6,10 @@ import { getGitHubConfig } from '../../config/github.js';
 export class PRReference {
   /**
    * ホスト名を正規表現用にエスケープ
+   * すべての正規表現メタキャラクタをエスケープして安全な文字列にする
    */
   private static escapeHostForRegex(host: string): string {
-    return host.replace(/\./g, '\\.');
+    return host.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   /**
